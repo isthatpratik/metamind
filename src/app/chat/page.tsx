@@ -1,13 +1,15 @@
 "use client";
 
+
 import React, { useState, useEffect, useRef, Suspense } from "react";
 import Image from "next/image";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import ChatInterface from "@/components/ChatInterface";
 import { generateAIResponse } from "@/lib/openai";
 import Link from "next/link";
 import AuthModal from "@/components/auth/AuthModal";
 import PremiumModal from "@/components/premium/PremiumModal";
+import SearchParamsClient from "@/components/SearchParamsClient";
 
 interface Message {
   id: string;
@@ -25,11 +27,7 @@ interface User {
 
 export default function ChatPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const toolParam = searchParams.get("tool");
-
   const [isLoading, setIsLoading] = useState(false);
-  const [showConfetti, setShowConfetti] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const [error, setError] = useState<string | null>(null);
@@ -38,9 +36,7 @@ export default function ChatPage() {
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [premiumModalOpen, setPremiumModalOpen] = useState(false);
   const [promptCount, setPromptCount] = useState(0);
-  const [selectedTool, setSelectedTool] = useState<
-    "V0" | "Cursor" | "Bolt" | "Tempo"
-  >("Tempo");
+  const [selectedTool, setSelectedTool] = useState<"V0" | "Cursor" | "Bolt" | "Tempo">("Tempo");
   const MAX_FREE_PROMPTS = 5;
 
   // Handle clicks outside the menu to close it
@@ -57,11 +53,6 @@ export default function ChatPage() {
   }, []);
 
   // Set the selected tool from URL parameter
-  useEffect(() => {
-    if (toolParam && ["V0", "Cursor", "Bolt", "Tempo"].includes(toolParam)) {
-      setSelectedTool(toolParam as "V0" | "Cursor" | "Bolt" | "Tempo");
-    }
-  }, [toolParam]);
 
   // Check for user in localStorage on mount
   useEffect(() => {
@@ -95,10 +86,9 @@ export default function ChatPage() {
 
   // Redirect to tool selection if no tool is selected
   useEffect(() => {
-    if (!toolParam) {
-      router.push("/");
-    }
-  }, [toolParam, router]);
+    router.prefetch("/");
+  }, [router]);
+  
 
   const handleSendMessage = async (message: string) => {
     try {
@@ -235,6 +225,7 @@ export default function ChatPage() {
 
   return (
     <Suspense fallback={<div>Loading...</div>}>
+      <SearchParamsClient setSelectedTool={setSelectedTool} />
       <main className="flex min-h-screen flex-col items-center justify-start bg-white text-black">
         <div className="w-full border-b border-[#eaeaea]">
           <div className="w-full max-w-7xl mx-auto px-4">
