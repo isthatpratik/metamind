@@ -49,9 +49,9 @@ const PromptHistory = ({ prompts = [], onClose }: PromptHistoryProps) => {
         <Button
           variant="outline"
           onClick={onClose}
-          className="border border-[#eaeaea] hover:bg-[#f5f5f5]"
+          className="border-0 bg-gradient-to-r from-pink-600 via-purple-600 to-blue-600 text-white hover:opacity-90"
         >
-          Close
+          Back to Chat
         </Button>
       </div>
 
@@ -70,7 +70,7 @@ const PromptHistory = ({ prompts = [], onClose }: PromptHistoryProps) => {
                   <div className="flex justify-between items-center p-4">
                     <div className="flex items-center gap-2">
                       <div className="bg-black text-white text-xs px-2 py-1">
-                        {prompt.toolType}
+                        {prompt.toolType} - App Generator
                       </div>
                       <span className="text-xs text-gray-500">
                         {prompt.timestamp}

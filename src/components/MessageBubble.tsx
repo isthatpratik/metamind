@@ -44,10 +44,12 @@ const MessageBubble = ({
     >
       <div className="flex items-center mb-1 text-xs text-black">
         {!isUser && (
-          <div className="flex items-center justify-center w-5 h-5 mr-1 overflow-hidden bg-black">
-            <div className="w-4 h-4 flex items-center justify-center text-white font-semibold text-xs">
-              MM
-            </div>
+          <div className="flex items-center justify-center w-5 h-5 mr-1 overflow-hidden">
+            <img
+              src="/images/metamind-logo.png"
+              alt="MetaMind"
+              className="w-5 h-5"
+            />
           </div>
         )}
         <span>

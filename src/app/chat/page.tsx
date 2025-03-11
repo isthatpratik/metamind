@@ -145,8 +145,18 @@ export default function ChatPage() {
         );
         clearTimeout(timeoutId);
 
-        // Show confetti before displaying the message
-        setShowConfetti(true);
+        // Play sound effect
+        const audio = new Audio("/notification.mp3");
+        audio.play();
+
+        // Add shake animation to chat interface
+        const chatInterface = document.querySelector(".chat-interface");
+        if (chatInterface) {
+          chatInterface.classList.add("animate-shake");
+          setTimeout(() => {
+            chatInterface.classList.remove("animate-shake");
+          }, 500);
+        }
 
         // Add AI response to the chat after a short delay
         setTimeout(() => {
@@ -174,8 +184,7 @@ export default function ChatPage() {
           prompts.push(promptToSave);
           localStorage.setItem("metamind_prompts", JSON.stringify(prompts));
 
-          // Hide confetti after message is displayed
-          setTimeout(() => setShowConfetti(false), 2000);
+          // No confetti animation
         }, 1000);
 
         // Increment prompt count and save to localStorage
@@ -339,7 +348,7 @@ export default function ChatPage() {
         onClose={() => setPremiumModalOpen(false)}
       />
 
-      {showConfetti && <Confetti duration={3000} />}
+      {/* Removed confetti */}
     </main>
   );
 }

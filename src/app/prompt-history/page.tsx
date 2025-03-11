@@ -145,8 +145,16 @@ export default function PromptHistoryPage() {
 
       <div className="w-full max-w-5xl flex flex-col items-center gap-8 pt-12 px-4">
         <div className="text-center space-y-2 mb-4">
-          <h1 className="text-3xl font-bold tracking-tight text-black">
-            Your Prompt History
+          <h1 className="text-3xl font-bold tracking-tight text-black bg-gradient-to-r from-pink-600 via-purple-600 to-blue-600 text-transparent bg-clip-text">
+            {
+              [
+                "Your Prompt Arsenal",
+                "AI Prompt Collection",
+                "Your Creative Prompts",
+                "Prompt Masterpieces",
+                "Your Genius Prompts",
+              ][Math.floor(Math.random() * 5)]
+            }
           </h1>
         </div>
 
