@@ -1,16 +1,13 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, Suspense } from "react";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import ChatInterface from "@/components/ChatInterface";
-import Header from "@/components/Header";
 import { generateAIResponse } from "@/lib/openai";
 import Link from "next/link";
-import { useRouter as useNavigationRouter } from "next/navigation";
 import AuthModal from "@/components/auth/AuthModal";
 import PremiumModal from "@/components/premium/PremiumModal";
-import Confetti from "@/components/Confetti";
 
 interface Message {
   id: string;
@@ -237,120 +234,122 @@ export default function ChatPage() {
   const currentYear = new Date().getFullYear();
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-start bg-white text-black">
-      <div className="w-full border-b border-[#eaeaea]">
-        <div className="w-full max-w-7xl mx-auto px-4">
-          <div className="w-full flex justify-between items-center py-6">
-            <div className="flex items-center gap-2">
-              <Image
-                src="/images/logo.svg"
-                alt="MetaMind Logo"
-                width={40}
-                height={40}
-              />
-            </div>
-            <div className="flex items-center gap-4">
-              {user && (
-                <span className="text-sm font-medium px-4 py-2 bg-white/80 backdrop-blur-sm border border-[#eaeaea] rounded-lg">
-                  {promptCount} of {MAX_FREE_PROMPTS} Free Prompts
-                </span>
-              )}
+    <Suspense fallback={<div>Loading...</div>}>
+      <main className="flex min-h-screen flex-col items-center justify-start bg-white text-black">
+        <div className="w-full border-b border-[#eaeaea]">
+          <div className="w-full max-w-7xl mx-auto px-4">
+            <div className="w-full flex justify-between items-center py-6">
+              <div className="flex items-center gap-2">
+                <Image
+                  src="/images/logo.svg"
+                  alt="MetaMind Logo"
+                  width={40}
+                  height={40}
+                />
+              </div>
+              <div className="flex items-center gap-4">
+                {user && (
+                  <span className="text-sm font-medium px-4 py-2 bg-white/80 backdrop-blur-sm border border-[#eaeaea] rounded-lg">
+                    {promptCount} of {MAX_FREE_PROMPTS} Free Prompts
+                  </span>
+                )}
 
-              {user && (
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => setPremiumModalOpen(true)}
-                    className="px-4 py-2 bg-gradient-to-r from-pink-600 via-purple-600 to-blue-600 text-white text-sm font-medium rounded-lg hover:opacity-90 transition-opacity"
-                  >
-                    Upgrade
-                  </button>
-                  <div className="relative" ref={menuRef}>
+                {user && (
+                  <div className="flex items-center gap-2">
                     <button
-                      onClick={() => setMenuOpen(!menuOpen)}
-                      className="p-2 bg-white border border-[#eaeaea] rounded-lg hover:border-black transition-all"
+                      onClick={() => setPremiumModalOpen(true)}
+                      className="px-4 py-2 bg-gradient-to-r from-pink-600 via-purple-600 to-blue-600 text-white text-sm font-medium rounded-lg hover:opacity-90 transition-opacity"
                     >
-                      <svg
-                        width="20"
-                        height="20"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        <line x1="3" y1="12" x2="21" y2="12"></line>
-                        <line x1="3" y1="6" x2="21" y2="6"></line>
-                        <line x1="3" y1="18" x2="21" y2="18"></line>
-                      </svg>
+                      Upgrade
                     </button>
-                    {menuOpen && user && (
-                      <div className="absolute right-0 mt-2 w-48 bg-white shadow-lg py-1 z-10 border border-[#eaeaea] rounded-lg">
-                        <div className="px-4 py-2 border-b border-[#eaeaea]">
-                          <p className="text-sm font-medium">{user.name}</p>
-                          <p className="text-xs text-gray-500">{user.email}</p>
+                    <div className="relative" ref={menuRef}>
+                      <button
+                        onClick={() => setMenuOpen(!menuOpen)}
+                        className="p-2 bg-white border border-[#eaeaea] rounded-lg hover:border-black transition-all"
+                      >
+                        <svg
+                          width="20"
+                          height="20"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          <line x1="3" y1="12" x2="21" y2="12"></line>
+                          <line x1="3" y1="6" x2="21" y2="6"></line>
+                          <line x1="3" y1="18" x2="21" y2="18"></line>
+                        </svg>
+                      </button>
+                      {menuOpen && user && (
+                        <div className="absolute right-0 mt-2 w-48 bg-white shadow-lg py-1 z-10 border border-[#eaeaea] rounded-lg">
+                          <div className="px-4 py-2 border-b border-[#eaeaea]">
+                            <p className="text-sm font-medium">{user.name}</p>
+                            <p className="text-xs text-gray-500">{user.email}</p>
+                          </div>
+                          <Link
+                            href="/prompt-history"
+                            className="block w-full text-left px-4 py-2 text-sm text-black hover:bg-[#f5f5f5] border-b border-[#eaeaea]"
+                          >
+                            Prompt History
+                          </Link>
+                          <button
+                            onClick={handleLogout}
+                            className="block w-full text-left px-4 py-2 text-sm text-black hover:bg-[#f5f5f5]"
+                          >
+                            Logout
+                          </button>
                         </div>
-                        <Link
-                          href="/prompt-history"
-                          className="block w-full text-left px-4 py-2 text-sm text-black hover:bg-[#f5f5f5] border-b border-[#eaeaea]"
-                        >
-                          Prompt History
-                        </Link>
-                        <button
-                          onClick={handleLogout}
-                          className="block w-full text-left px-4 py-2 text-sm text-black hover:bg-[#f5f5f5]"
-                        >
-                          Logout
-                        </button>
-                      </div>
-                    )}
+                      )}
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      <div className="flex-1 w-full max-w-5xl flex flex-col justify-center items-center min-h-0 px-4">
-        <div className="text-center space-y-2 mb-4 pt-12">
-          <h1 className="text-3xl font-bold tracking-tight text-black">
-            MetaMind Prompt Generator
-          </h1>
+        <div className="flex-1 w-full max-w-5xl flex flex-col justify-center items-center min-h-0 px-4">
+          <div className="text-center space-y-2 mb-4 pt-12">
+            <h1 className="text-3xl font-bold tracking-tight text-black">
+              MetaMind Prompt Generator
+            </h1>
+          </div>
+          <div className="flex w-full py-4 relative border border-[#eaeaea] rounded-lg overflow-hidden bg-white/80 backdrop-blur-sm before:absolute before:inset-0 before:-translate-x-full before:animate-[shimmer_2s_infinite] before:bg-gradient-to-r before:from-transparent before:via-white/60 before:to-transparent">
+            <ChatInterface
+              onSendMessage={handleSendMessage}
+              isLoading={isLoading}
+              initialMessages={messages}
+              initialTool={selectedTool}
+              showToolSelector={false}
+            />
+          </div>
         </div>
-        <div className="flex w-full py-4 relative border border-[#eaeaea] rounded-lg overflow-hidden bg-white/80 backdrop-blur-sm before:absolute before:inset-0 before:-translate-x-full before:animate-[shimmer_2s_infinite] before:bg-gradient-to-r before:from-transparent before:via-white/60 before:to-transparent">
-          <ChatInterface
-            onSendMessage={handleSendMessage}
-            isLoading={isLoading}
-            initialMessages={messages}
-            initialTool={selectedTool}
-            showToolSelector={false}
-          />
-        </div>
-      </div>
-      <footer className="text-center text-xs text-gray-500 py-6">
-        <p>
-          © {currentYear} MetaMind - Product prompt generator by{" "}
-          <Link
-            href="https://ampvc.co"
-            target="_blank"
-            className="text-gray-700 hover:text-black transition-colors"
-          >
-            Ampersand
-          </Link>
-        </p>
-      </footer>
+        <footer className="text-center text-xs text-gray-500 py-6">
+          <p>
+            © {currentYear} MetaMind - Product prompt generator by{" "}
+            <Link
+              href="https://ampvc.co"
+              target="_blank"
+              className="text-gray-700 hover:text-black transition-colors"
+            >
+              Ampersand
+            </Link>
+          </p>
+        </footer>
 
-      <AuthModal
-        isOpen={authModalOpen}
-        onClose={() => (user ? setAuthModalOpen(false) : null)}
-        onLogin={handleLogin}
-      />
+        <AuthModal
+          isOpen={authModalOpen}
+          onClose={() => (user ? setAuthModalOpen(false) : null)}
+          onLogin={handleLogin}
+        />
 
-      <PremiumModal
-        isOpen={premiumModalOpen}
-        onClose={() => setPremiumModalOpen(false)}
-      />
-    </main>
+        <PremiumModal
+          isOpen={premiumModalOpen}
+          onClose={() => setPremiumModalOpen(false)}
+        />
+      </main>
+    </Suspense>
   );
 }
