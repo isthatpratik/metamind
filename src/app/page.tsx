@@ -2,17 +2,12 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import Header from "@/components/Header";
 import Link from "next/link";
-import { useRouter as useNavigationRouter } from "next/navigation";
 import AuthModal from "@/components/auth/AuthModal";
 import PremiumModal from "@/components/premium/PremiumModal";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import Image from "next/image";
-import { DotPattern } from "@/components/magicui/dot-pattern";
-import { cn } from "@/lib/utils";
 import { FlickeringGrid } from "@/components/magicui/flickering-grid";
+import { MagicCard } from "@/components/magicui/magic-card";
 
 interface User {
   email: string;
@@ -92,7 +87,7 @@ export default function Home() {
     },
     {
       id: "Bolt",
-      name: "Bolt AI",
+      name: "Bolt",
       description: "AI-powered development platform for building apps",
     },
     {
@@ -220,16 +215,18 @@ export default function Home() {
           <div className="w-full max-w-4xl mx-auto flex justify-center">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-4xl">
               {tools.map((tool) => (
-                <div
+                <MagicCard
                   key={tool.id}
-                  className="bg-white/95 backdrop-blur-sm border border-[#eaeaea] hover:border-black transition-all cursor-pointer overflow-hidden rounded-lg shadow-sm"
+                  className="rounded-lg"
+                  
+                  gradientOpacity={0.12}
                   onClick={() =>
                     handleToolSelect(
                       tool.id as "V0" | "Cursor" | "Bolt" | "Tempo"
                     )
                   }
                 >
-                  <div className="p-6 flex flex-col items-center text-center">
+                  <div className="p-8 flex flex-col items-center text-center">
                     <div className="w-16 h-16 bg-white flex items-center justify-center mb-3 overflow-hidden rounded-lg border border-[#eaeaea]">
                       <Image
                         src={`/images/${tool.id.toLowerCase()}.${tool.id === "V0" || tool.id === "Bolt" ? "png" : "jpg"}`}
@@ -239,14 +236,14 @@ export default function Home() {
                         className="object-cover w-full h-full"
                       />
                     </div>
-                    <h3 className="text-lg font-semibold text-black mb-2">
+                    <h3 className="text-xl font-semibold text-black mb-2">
                       {tool.name}
                     </h3>
                     <p className="text-black text-sm line-clamp-3 text-balance">
                       {tool.description}
                     </p>
                   </div>
-                </div>
+                </MagicCard>
               ))}
             </div>
           </div>

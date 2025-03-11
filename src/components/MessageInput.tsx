@@ -66,27 +66,20 @@ const MessageInput = ({
           placeholder={placeholder}
           disabled={disabled || isLoading}
           className={cn(
-            "resize-none overflow-hidden bg-white rounded-lg border border-black text-black focus:border-black focus:ring-0",
+            "resize-none overflow-hidden bg-white rounded-lg border border-black/80 text-black focus:border-black focus:ring-0",
             isLoading && "opacity-70"
           )}
-          rows={1}
-          style={{ minHeight: "auto" }}
+          rows={1} // Default single line
+          
         />
         <Button
           type="submit"
           disabled={!message.trim() || isLoading || disabled}
-          className={cn(
-            "h-full w-12 rounded-lg shrink-0 bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 text-white",
-            "hover:opacity-90 transition-colors",
-            "disabled:cursor-not-allowed disabled:opacity-100 disabled:grayscale"
-          )}
+          className="h-full w-12 rounded-lg shrink-0 bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 hover:opacity-90 text-white animate-gradient-x"
           aria-label="Send message"
         >
           {isLoading ? (
-            <div className="relative w-8 h-8">
-              <div className="absolute inset-0 border-4 border-white/30 rounded-full" />
-              <div className="absolute inset-0 border-4 border-white border-t-transparent animate-spin rounded-full" />
-            </div>
+            <div className="h-8 w-8 border-2 border-white border-t-transparent animate-spin"></div>
           ) : (
             <SendHorizonal className="h-8 w-8" />
           )}

@@ -5,7 +5,6 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import PromptHistory from "@/components/PromptHistory";
-import { DotPattern } from "@/registry/magicui/dot-pattern";
 
 interface User {
   email: string;

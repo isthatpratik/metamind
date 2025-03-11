@@ -141,7 +141,7 @@ export default function ChatPage() {
         const aiResponse = await generateAIResponse(
           message,
           selectedTool,
-          controller.signal,
+          controller.signal
         );
         clearTimeout(timeoutId);
 
@@ -192,7 +192,7 @@ export default function ChatPage() {
         setPromptCount(newPromptCount);
         localStorage.setItem(
           "metamind_prompt_count",
-          newPromptCount.toString(),
+          newPromptCount.toString()
         );
       } catch (err) {
         clearTimeout(timeoutId);
@@ -312,14 +312,13 @@ export default function ChatPage() {
         </div>
       </div>
 
-      <div className="w-full max-w-5xl flex flex-col items-center gap-8 pt-12 px-4">
-        <div className="text-center space-y-2 mb-4">
+      <div className="flex-1 w-full max-w-5xl flex flex-col justify-center items-center min-h-0 px-4">
+        <div className="text-center space-y-2 mb-4 pt-12">
           <h1 className="text-3xl font-bold tracking-tight text-black">
             MetaMind Prompt Generator
           </h1>
         </div>
-
-        <div className="w-full py-4 relative border border-[#eaeaea] rounded-lg overflow-hidden bg-white/80 backdrop-blur-sm before:absolute before:inset-0 before:-translate-x-full before:animate-[shimmer_2s_infinite] before:bg-gradient-to-r before:from-transparent before:via-white/60 before:to-transparent">
+        <div className="flex w-full py-4 relative border border-[#eaeaea] rounded-lg overflow-hidden bg-white/80 backdrop-blur-sm before:absolute before:inset-0 before:-translate-x-full before:animate-[shimmer_2s_infinite] before:bg-gradient-to-r before:from-transparent before:via-white/60 before:to-transparent">
           <ChatInterface
             onSendMessage={handleSendMessage}
             isLoading={isLoading}
@@ -328,20 +327,19 @@ export default function ChatPage() {
             showToolSelector={false}
           />
         </div>
-
-        <footer className="text-center text-xs text-gray-500 mt-8">
-          <p>
-            © {currentYear} MetaMind - Product prompt generator by{" "}
-            <Link
-              href="https://ampvc.co"
-              target="_blank"
-              className="text-gray-700 hover:text-black transition-colors"
-            >
-              Ampersand
-            </Link>
-          </p>
-        </footer>
       </div>
+      <footer className="text-center text-xs text-gray-500 py-6">
+        <p>
+          © {currentYear} MetaMind - Product prompt generator by{" "}
+          <Link
+            href="https://ampvc.co"
+            target="_blank"
+            className="text-gray-700 hover:text-black transition-colors"
+          >
+            Ampersand
+          </Link>
+        </p>
+      </footer>
 
       <AuthModal
         isOpen={authModalOpen}
@@ -353,8 +351,6 @@ export default function ChatPage() {
         isOpen={premiumModalOpen}
         onClose={() => setPremiumModalOpen(false)}
       />
-
-      {/* Removed confetti */}
     </main>
   );
 }

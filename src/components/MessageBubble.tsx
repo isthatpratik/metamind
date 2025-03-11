@@ -64,17 +64,17 @@ const MessageBubble = ({
         {syntaxHighlight && !isUser ? (
           <div className="relative">
             <div className="relative">
-              <div className="absolute -top-3 left-4 bg-black text-white text-xs px-2 py-1">
+              <div className="absolute -top-3 left-4 bg-black rounded-lg text-white text-xs px-2 py-1">
                 {toolType} Prompt
               </div>
-              <pre className="p-6 pt-8 bg-black text-sm text-white mt-2 whitespace-pre-wrap overflow-x-hidden">
+              <pre className="p-6 pt-8 bg-black text-sm text-white mt-2 whitespace-pre-wrap rounded-lg overflow-x-hidden">
                 <code>{message}</code>
               </pre>
               <div className="mt-2">
                 <Button
                   variant="outline"
                   size="sm"
-                  className="h-8 px-3 text-xs bg-gradient-to-r from-pink-600 via-purple-600 to-blue-600 hover:opacity-90 text-white rounded-none border-0"
+                  className="h-8 px-3 text-xs bg-gradient-to-r from-pink-600 via-purple-600 to-blue-600 hover:opacity-90 text-white rounded-lg border-0"
                   onClick={() => copyToClipboard()}
                 >
                   <Copy className="h-3 w-3 mr-1" />
