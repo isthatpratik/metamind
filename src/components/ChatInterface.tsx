@@ -5,6 +5,7 @@ import MessageInput from "./MessageInput";
 import { Toaster } from "./ui/toaster";
 import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
 import { AlertCircle } from "lucide-react";
+import { ShineBorder } from "./magicui/shine-border";
 
 interface Message {
   id: string;
@@ -84,7 +85,7 @@ const ChatInterface = ({
   );
 
   return (
-    <div className="w-full max-w-4xl mx-auto overflow-hidden flex flex-col h-[600px] bg-white border border-gray-300 animate-border-pulse chat-interface">
+    <div className="w-full max-w-4xl mx-auto overflow-hidden rounded-lg flex flex-col h-[600px] bg-white">
       {showToolSelector && (
         <div className="p-0">
           <MemoizedToolSelector
@@ -95,8 +96,9 @@ const ChatInterface = ({
       )}
 
       <div className="flex-1 overflow-hidden p-0">
+      
         {error && (
-          <Alert variant="destructive" className="m-4 bg-black border-0">
+          <Alert variant="destructive" className="m-4 bg-black rounded-lg border-0">
             <AlertCircle className="h-4 w-4 text-white" />
             <AlertTitle className="text-white">Error</AlertTitle>
             <AlertDescription className="text-white">{error}</AlertDescription>
@@ -117,7 +119,7 @@ const ChatInterface = ({
           disabled={isLoading}
         />
       </div>
-
+      <ShineBorder shineColor={["#A07CFE", "#FE8FB5", "#FFBE7B"]} />
       <Toaster />
     </div>
   );

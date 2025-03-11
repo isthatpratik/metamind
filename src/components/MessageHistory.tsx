@@ -1,6 +1,7 @@
-import React, { useRef, useEffect } from "react";
+import React, { useRef, useEffect, useState } from "react";
 import { ScrollArea } from "./ui/scroll-area";
 import MessageBubble from "./MessageBubble";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface Message {
   id: string;
@@ -32,6 +33,7 @@ const MessageHistory = ({
 }: MessageHistoryProps) => {
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const endOfMessagesRef = useRef<HTMLDivElement>(null);
+  const [progress, setProgress] = useState(0);
 
   // Auto-scroll to bottom when messages change or loading state changes
   useEffect(() => {
@@ -40,8 +42,52 @@ const MessageHistory = ({
     }
   }, [messages, loading]);
 
+  // Simulate progress when loading
+  useEffect(() => {
+    if (loading) {
+      setProgress(0);
+      const interval = setInterval(() => {
+        setProgress((prev) => {
+          const next = prev + (100 - prev) * 0.1;
+          return next >= 95 ? 95 : next;
+        });
+      }, 500);
+      return () => clearInterval(interval);
+    } else {
+      setProgress(100);
+    }
+  }, [loading]);
+
   return (
-    <div className="w-full h-[480px] flex flex-col bg-white">
+    <div className="w-full h-[480px] flex flex-col bg-white relative">
+      <AnimatePresence>
+        {!loading && messages.length > 0 && messages[messages.length - 1]?.isUser === false && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.8 }}
+            className="absolute inset-0 pointer-events-none"
+          >
+            <motion.div
+              animate={{
+                boxShadow: [
+                  "0 0 0 0 rgba(160, 124, 254, 0)",
+                  "0 0 0 20px rgba(160, 124, 254, 0.2)",
+                  "0 0 0 40px rgba(160, 124, 254, 0)",
+                ],
+              }}
+              transition={{
+                duration: 1.5,
+                ease: "easeOut",
+                times: [0, 0.5, 1],
+                repeat: 0,
+              }}
+              className="w-full h-full rounded-lg"
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <ScrollArea className="flex-1 p-4 h-full" ref={scrollAreaRef}>
         <div className="flex flex-col space-y-4">
           {messages.map((message) => (
@@ -58,14 +104,15 @@ const MessageHistory = ({
           ))}
           {loading && (
             <div className="flex flex-col items-center justify-center py-8 space-y-4">
-              <div className="w-64 h-3 bg-[#f5f5f5] overflow-hidden">
-                <div
-                  className="h-full bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-500 animate-progress"
-                  style={{ width: "0%" }}
-                ></div>
+              <div className="w-64 h-3 bg-[#f5f5f5] rounded-full overflow-hidden">
+                <motion.div
+                  className="h-full bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-500"
+                  animate={{ width: `${progress}%` }}
+                  transition={{ duration: 0.5 }}
+                />
               </div>
-              <p className="text-sm text-black animate-pulse font-medium">
-                Working on the prompt details... Please wait!
+              <p className="text-sm text-black font-medium">
+                Generating response... {Math.round(progress)}%
               </p>
             </div>
           )}

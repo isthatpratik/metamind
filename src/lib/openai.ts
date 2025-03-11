@@ -4,11 +4,10 @@ export async function generateAIResponse(
   signal?: AbortSignal,
 ) {
   try {
-    const apiKey =
-      process.env.OPENAI_API_KEY || process.env.NEXT_PUBLIC_OPENAI_API_KEY;
+    const apiKey = process.env.NEXT_PUBLIC_OPENAI_API_KEY;
 
     if (!apiKey) {
-      throw new Error("OpenAI API key is missing");
+      throw new Error("OpenAI API key is missing. Please add NEXT_PUBLIC_OPENAI_API_KEY to your .env.local file");
     }
 
     // Create tool-specific system prompts
@@ -42,7 +41,8 @@ export async function generateAIResponse(
           },
         ],
         temperature: 0.7,
-        max_tokens: 1500,
+        max_tokens: 1200,
+        stream: true,
       }),
       signal,
     });
@@ -54,8 +54,36 @@ export async function generateAIResponse(
       );
     }
 
-    const data = await response.json();
-    return data.choices[0].message.content;
+    const reader = response.body?.getReader();
+    const decoder = new TextDecoder();
+    let result = "";
+
+    if (!reader) {
+      throw new Error("Failed to get response reader");
+    }
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      const chunk = decoder.decode(value);
+      const lines = chunk.split("\n");
+      
+      for (const line of lines) {
+        if (line.startsWith("data: ") && line !== "data: [DONE]") {
+          try {
+            const data = JSON.parse(line.slice(6));
+            if (data.choices[0].delta.content) {
+              result += data.choices[0].delta.content;
+            }
+          } catch (e) {
+            console.error("Error parsing chunk:", e);
+          }
+        }
+      }
+    }
+
+    return result;
   } catch (error) {
     console.error("Error calling OpenAI API:", error);
     throw error;

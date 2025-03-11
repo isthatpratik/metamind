@@ -113,7 +113,7 @@ const AuthModal = ({
             <form onSubmit={handleSubmit} className="space-y-4 pt-4">
               <div className="space-y-2">
                 <Label htmlFor="email" className="text-black">
-                  Username
+                  Email
                 </Label>
                 <Input
                   id="email"
@@ -141,7 +141,7 @@ const AuthModal = ({
               </div>
               <div className="flex items-center space-x-2">
                 <div
-                  className={`w-5 h-5 border ${rememberMe ? "bg-black" : "bg-white"} border-[#eaeaea] flex items-center justify-center cursor-pointer`}
+                  className={`w-5 h-5 border rounded-sm ${rememberMe ? "bg-black" : "bg-white"} border-[#eaeaea] flex items-center justify-center cursor-pointer`}
                   onClick={() => setRememberMe(!rememberMe)}
                 >
                   {rememberMe && <Check className="h-4 w-4 text-white" />}

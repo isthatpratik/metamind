@@ -47,7 +47,7 @@ const Header = ({
 
       <div className="flex items-center gap-3">
         {user && (
-          <div className="flex flex-col items-center mr-2 hidden md:block">
+          <div className="flex flex-col items-center mr-2 md:block">
             <div className="text-xs text-gray-400 mb-1">
               {promptCount}/{maxPrompts} prompts used
             </div>

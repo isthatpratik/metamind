@@ -3,6 +3,7 @@ import { Copy } from "lucide-react";
 import { Button } from "./ui/button";
 import { cn } from "../lib/utils";
 import { useToast } from "./ui/use-toast";
+import Image from "next/image";
 
 interface MessageBubbleProps {
   message: string;
@@ -32,27 +33,29 @@ const MessageBubble = ({
 
   // Determine background color based on sender
   const bubbleClasses = cn(
-    "p-4 max-w-[85%] mb-4",
+    "p-4 max-w-[85%] rounded-lg mb-4",
     isUser
       ? "bg-black text-white ml-auto"
-      : "bg-white text-black mr-auto border border-[#eaeaea]",
+      : "bg-white text-black mr-auto border",
   );
 
   return (
     <div
       className={`flex flex-col ${isUser ? "items-end" : "items-start"} w-full`}
     >
-      <div className="flex items-center mb-1 text-xs text-black">
+      <div className="flex items-center mb-2 text-xs text-black">
         {!isUser && (
           <div className="flex items-center justify-center w-5 h-5 mr-1 overflow-hidden">
-            <img
-              src="/images/metamind-logo.png"
+            <Image
+              src="/images/logo.svg"
               alt="MetaMind"
+              width={20}
+              height={20}
               className="w-5 h-5"
             />
           </div>
         )}
-        <span>
+        <span className="flex items-center">
           {isUser ? "You" : "MetaMind"} • {timestamp}
         </span>
       </div>

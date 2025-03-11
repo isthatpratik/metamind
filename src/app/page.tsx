@@ -10,6 +10,9 @@ import PremiumModal from "@/components/premium/PremiumModal";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
+import { DotPattern } from "@/components/magicui/dot-pattern";
+import { cn } from "@/lib/utils";
+import { FlickeringGrid } from "@/components/magicui/flickering-grid";
 
 interface User {
   email: string;
@@ -94,143 +97,162 @@ export default function Home() {
     },
     {
       id: "Tempo",
-      name: "Tempo",
+      name: "Tempo Labs",
       description: "AI-powered platform for building web applications",
     },
   ];
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-start gap-10 bg-white text-black">
-      <div className="w-full flex justify-between items-center py-6 px-4">
-        <div className="flex items-center gap-2">
-          <Image
-            src="/images/logo.svg"
-            alt="MetaMind Logo"
-            width={40}
-            height={40}
-          />
-        </div>
-        <div className="flex items-center gap-4">
-          {user && (
-            <span className="text-sm font-medium">
-              {promptCount} of {MAX_FREE_PROMPTS} Free Prompts
-            </span>
-          )}
-
-          {!user ? (
-            <div className="flex gap-2">
-              <button
-                onClick={() => setAuthModalOpen(true)}
-                className="px-4 py-2 bg-white border border-[#eaeaea] text-sm font-medium rounded-none"
-              >
-                Sign In
-              </button>
-              <button
-                onClick={() => {
-                  setActiveTab("register");
-                  setAuthModalOpen(true);
-                }}
-                className="px-4 py-2 bg-black text-white text-sm font-medium rounded-none"
-              >
-                Sign Up
-              </button>
-            </div>
-          ) : (
+    <main className="flex min-h-screen flex-col items-center bg-white text-black">
+      <div className="w-full border-b border-[#eaeaea]">
+        <div className="w-full max-w-7xl mx-auto px-4">
+          <div className="w-full flex justify-between items-center py-6">
             <div className="flex items-center gap-2">
-              <button
-                onClick={() => setPremiumModalOpen(true)}
-                className="px-4 py-2 bg-gradient-to-r from-pink-600 via-purple-600 to-blue-600 text-white text-sm font-medium rounded-none"
-              >
-                Upgrade
-              </button>
-              <div className="relative" ref={menuRef}>
-                <button
-                  onClick={() => setMenuOpen(!menuOpen)}
-                  className="p-2 bg-white border border-[#eaeaea] rounded-none"
-                >
-                  <svg
-                    width="20"
-                    height="20"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <line x1="3" y1="12" x2="21" y2="12"></line>
-                    <line x1="3" y1="6" x2="21" y2="6"></line>
-                    <line x1="3" y1="18" x2="21" y2="18"></line>
-                  </svg>
-                </button>
-                {menuOpen && user && (
-                  <div className="absolute right-0 mt-2 w-48 bg-white shadow-lg py-1 z-10 border border-[#eaeaea]">
-                    <div className="px-4 py-2 border-b border-[#eaeaea]">
-                      <p className="text-sm font-medium">{user.name}</p>
-                      <p className="text-xs text-gray-500">{user.email}</p>
-                    </div>
-                    <Link
-                      href="/prompt-history"
-                      className="block w-full text-left px-4 py-2 text-sm text-black hover:bg-[#f5f5f5] border-b border-[#eaeaea]"
-                    >
-                      Prompt History
-                    </Link>
-                    <button
-                      onClick={handleLogout}
-                      className="block w-full text-left px-4 py-2 text-sm text-black hover:bg-[#f5f5f5]"
-                    >
-                      Logout
-                    </button>
-                  </div>
-                )}
-              </div>
+              <Image
+                src="/images/logo.svg"
+                alt="MetaMind Logo"
+                width={40}
+                height={40}
+              />
             </div>
-          )}
+            <div className="flex items-center gap-4">
+              {user && (
+                <span className="text-sm font-medium">
+                  {promptCount} of {MAX_FREE_PROMPTS} Free Prompts
+                </span>
+              )}
+
+              {!user ? (
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setAuthModalOpen(true)}
+                    className="px-4 py-2 bg-white border border-[#eaeaea] text-sm font-medium rounded-lg"
+                  >
+                    Sign In
+                  </button>
+                  <button
+                    onClick={() => {
+                      setActiveTab("register");
+                      setAuthModalOpen(true);
+                    }}
+                    className="px-4 py-2 bg-black text-white text-sm font-medium rounded-lg"
+                  >
+                    Sign Up
+                  </button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setPremiumModalOpen(true)}
+                    className="px-4 py-2 bg-gradient-to-r from-pink-600 via-purple-600 to-blue-600 text-white text-sm font-medium rounded-lg"
+                  >
+                    Upgrade
+                  </button>
+                  <div className="relative" ref={menuRef}>
+                    <button
+                      onClick={() => setMenuOpen(!menuOpen)}
+                      className="p-2 bg-white border border-[#eaeaea] rounded-lg"
+                    >
+                      <svg
+                        width="20"
+                        height="20"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <line x1="3" y1="12" x2="21" y2="12"></line>
+                        <line x1="3" y1="6" x2="21" y2="6"></line>
+                        <line x1="3" y1="18" x2="21" y2="18"></line>
+                      </svg>
+                    </button>
+                    {menuOpen && user && (
+                      <div className="absolute right-0 mt-2 w-48 bg-white shadow-lg py-1 z-10 border border-[#eaeaea] rounded-lg">
+                        <div className="px-4 py-2 border-b border-[#eaeaea]">
+                          <p className="text-sm font-medium">{user.name}</p>
+                          <p className="text-xs text-gray-500">{user.email}</p>
+                        </div>
+                        <Link
+                          href="/prompt-history"
+                          className="block w-full text-left px-4 py-2 text-sm text-black hover:bg-[#f5f5f5] border-b border-[#eaeaea]"
+                        >
+                          Prompt History
+                        </Link>
+                        <button
+                          onClick={handleLogout}
+                          className="block w-full text-left px-4 py-2 text-sm text-black hover:bg-[#f5f5f5]"
+                        >
+                          Logout
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       </div>
 
-      <div className="w-full max-w-5xl flex flex-col items-center gap-8 pt-12 px-4">
-        <div className="text-center space-y-2 mb-8">
-          <h1 className="text-3xl font-bold tracking-tight text-black md:text-4xl"></h1>
-          <p className="text-black-600 font-bold text-4xl max-w-4xl">
-            Welcome to MetaMind
-          </p>
-          <p className="text-gray-600 font-normal text-xl max-w-xl">
-            your AI prompt generator
-          </p>
-        </div>
+      <div className="flex-1 w-full max-w-7xl mx-auto px-4 flex flex-col">
+        <div className="relative flex flex-col items-center justify-center gap-8 py-12 w-full flex-1">
+          <div className="absolute inset-0 overflow-hidden flex items-center justify-center">
+            <FlickeringGrid
+              className="relative z-0 [mask-image:radial-gradient(600px_circle_at_center,white,transparent)]"
+              squareSize={4}
+              gridGap={6}
+              colors={["#A07CFE", "#FE8FB5", "#FFBE7B"]}
+              maxOpacity={0.5}
+              flickerChance={0.1}
+            />
+          </div>
+          <div className="text-center space-y-2 mb-8 relative z-10 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.5)_70%,rgba(255,255,255,0)_71%)] rounded-full px-8 py-6">
+            <h2 className="text-4xl font-bold tracking-tight text-black md:text-4xl">
+              {user ? `Welcome, ${user.name}` : "Welcome to MetaMind"}
+            </h2>
+            <h1 className="text-gray-600 font-normal text-xl max-w-xl">
+              Craft powerful AI prompts with intelligent assistance
+            </h1>
+          </div>
 
-        <div className="w-full max-w-4xl mx-auto flex justify-center">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-3xl">
-            {tools.map((tool) => (
-              <div
-                key={tool.id}
-                className="bg-white border border-[#eaeaea] hover:border-black transition-all cursor-pointer overflow-hidden"
-                onClick={() =>
-                  handleToolSelect(
-                    tool.id as "V0" | "Cursor" | "Bolt" | "Tempo",
-                  )
-                }
-              >
-                <div className="p-6 flex flex-col items-center text-center">
-                  <div className="w-12 h-12 bg-black flex items-center justify-center mb-3">
-                    <span className="text-white font-bold text-xl">
-                      {tool.id.charAt(0)}
-                    </span>
+          <div className="w-full max-w-4xl mx-auto flex justify-center">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-4xl">
+              {tools.map((tool) => (
+                <div
+                  key={tool.id}
+                  className="bg-white/95 backdrop-blur-sm border border-[#eaeaea] hover:border-black transition-all cursor-pointer overflow-hidden rounded-lg shadow-sm"
+                  onClick={() =>
+                    handleToolSelect(
+                      tool.id as "V0" | "Cursor" | "Bolt" | "Tempo"
+                    )
+                  }
+                >
+                  <div className="p-6 flex flex-col items-center text-center">
+                    <div className="w-16 h-16 bg-white flex items-center justify-center mb-3 overflow-hidden rounded-lg border border-[#eaeaea]">
+                      <Image
+                        src={`/images/${tool.id.toLowerCase()}.${tool.id === "V0" || tool.id === "Bolt" ? "png" : "jpg"}`}
+                        alt={`${tool.name} logo`}
+                        width={100}
+                        height={100}
+                        className="object-cover w-full h-full"
+                      />
+                    </div>
+                    <h3 className="text-lg font-semibold text-black mb-2">
+                      {tool.name}
+                    </h3>
+                    <p className="text-black text-sm line-clamp-3 text-balance">
+                      {tool.description}
+                    </p>
                   </div>
-                  <h3 className="text-lg font-semibold text-black mb-2">
-                    {tool.name}
-                  </h3>
-                  <p className="text-black text-sm line-clamp-2">
-                    {tool.description}
-                  </p>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
 
-        <footer className="text-center text-xs text-gray-500 mt-12">
+        <footer className="text-center text-xs text-gray-500 py-6 relative">
           <p>
             © {currentYear} MetaMind - Product prompt generator by{" "}
             <Link

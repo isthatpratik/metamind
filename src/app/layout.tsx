@@ -1,11 +1,14 @@
 import { TempoInit } from "@/components/tempo-init";
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Fustat } from "next/font/google";
 import Script from "next/script";
 import { ThemeProvider } from "@/components/theme-provider";
 import "./globals.css";
 
-const inter = Inter({ subsets: ["latin"] });
+const fustat = Fustat({
+  subsets: ["latin"],
+  weight: ["200", "300", "400", "500", "600", "700", "800"],
+});
 
 export const metadata: Metadata = {
   title: "MetaMind Prompt Generator by Ampersand",
@@ -20,15 +23,13 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning className="dark">
-      <Script src="https://api.tempolabs.ai/proxy-asset?url=https://storage.googleapis.com/tempo-public-assets/error-handling.js" />
-      <body className={inter.className}>
+      <body className={fustat.className}>
         <ThemeProvider
           attribute="class"
           defaultTheme="dark"
           enableSystem={true}
         >
           {children}
-          <TempoInit />
         </ThemeProvider>
       </body>
     </html>
