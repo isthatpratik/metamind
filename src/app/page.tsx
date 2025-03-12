@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import React, { useState, useEffect, useRef, Suspense } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import AuthModal from "@/components/auth/AuthModal";
 import PremiumModal from "@/components/premium/PremiumModal";
+import MainPageRecoveryHandler from "@/components/auth/MainPageRecoveryHandler";
 import Image from "next/image";
 import { FlickeringGrid } from "@/components/magicui/flickering-grid";
 import { MagicCard } from "@/components/magicui/magic-card";
@@ -30,20 +31,6 @@ export default function Home() {
   const [promptCount, setPromptCount] = useState(0);
   const [selectedTool, setSelectedTool] = useState<"V0" | "Cursor" | "Bolt" | "Tempo" | null>(null);
   const MAX_FREE_PROMPTS = 5;
-  const searchParams = useSearchParams();
-
-  // Check for recovery parameter in URL
-  useEffect(() => {
-    const type = searchParams.get('type');
-    if (type === 'recovery') {
-      setActiveTab('update-password');
-      setAuthModalOpen(true);
-      // Remove the recovery parameter from URL
-      const newUrl = new URL(window.location.href);
-      newUrl.searchParams.delete('type');
-      window.history.replaceState({}, '', newUrl.toString());
-    }
-  }, [searchParams]);
 
   // Handle clicks outside the menu to close it
   useEffect(() => {
@@ -58,11 +45,17 @@ export default function Home() {
     };
   }, []);
 
-  // Listen for auth state changes
+  // Check for authenticated user and get profile on mount
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === 'SIGNED_IN' && session?.user) {
-        // Get user profile and prompt history
+    const checkUser = async () => {
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError) {
+        console.error("Error getting session:", sessionError);
+        return;
+      }
+
+      if (session?.user) {
         const { data: profile, error: profileError } = await getProfile(session.user.id);
         
         if (profileError) {
@@ -76,7 +69,7 @@ export default function Home() {
             email: session.user.email || "",
             name: profile.name || session.user.email?.split("@")[0] || "",
           });
-
+          
           // Get prompt history to ensure accurate count
           const { data: promptHistory, error: historyError } = await getPromptHistory(session.user.id);
           
@@ -91,6 +84,30 @@ export default function Home() {
             setPromptCount(actualCount);
           }
         }
+      }
+    };
+
+    checkUser();
+  }, []);
+
+  // Listen for auth state changes
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_IN' && session?.user) {
+        const { data: profile } = await getProfile(session.user.id);
+        const { data: promptHistory } = await getPromptHistory(session.user.id);
+        
+        setUser({
+          id: session.user.id,
+          email: session.user.email || "",
+          name: profile?.name || session.user.email?.split("@")[0] || "",
+        });
+
+        const actualCount = Math.max(
+          profile?.prompt_count || 0,
+          promptHistory?.length || 0
+        );
+        setPromptCount(actualCount);
       } else if (event === 'SIGNED_OUT') {
         setUser(null);
         setPromptCount(0);
@@ -103,25 +120,33 @@ export default function Home() {
   }, []);
 
   const handleLogin = async (userData: { email: string; name: string; id: string; promptCount: number }) => {
-    setUser({
-      id: userData.id,
-      email: userData.email,
-      name: userData.name,
-    });
-    
-    // Get fresh prompt count after login
-    const { data: profile } = await getProfile(userData.id);
-    const { data: promptHistory } = await getPromptHistory(userData.id);
-    
-    // Use the most accurate count available
-    const actualCount = Math.max(
-      profile?.prompt_count || 0,
-      promptHistory?.length || 0,
-      userData.promptCount
-    );
-    
-    setPromptCount(actualCount);
-    setAuthModalOpen(false);
+    try {
+      setUser({
+        id: userData.id,
+        email: userData.email,
+        name: userData.name,
+      });
+      
+      // Get fresh prompt count after login
+      const { data: profile } = await getProfile(userData.id);
+      const { data: promptHistory } = await getPromptHistory(userData.id);
+      
+      // Use the most accurate count available
+      const actualCount = Math.max(
+        profile?.prompt_count || 0,
+        promptHistory?.length || 0,
+        userData.promptCount
+      );
+      
+      setPromptCount(actualCount);
+      setAuthModalOpen(false);
+    } catch (error) {
+      console.error("Error in handleLogin:", error);
+      toast.error("Error updating user data", {
+        description: "Please try logging in again",
+        descriptionClassName: "text-gray-500"
+      });
+    }
   };
 
   const handleLogout = async () => {
@@ -179,6 +204,13 @@ export default function Home() {
 
   return (
     <main className="flex min-h-screen flex-col items-center bg-white text-black">
+      <Suspense fallback={null}>
+        <MainPageRecoveryHandler 
+          setActiveTab={setActiveTab}
+          setAuthModalOpen={setAuthModalOpen}
+        />
+      </Suspense>
+
       <div className="w-full border-b border-[#eaeaea]">
         <div className="w-full max-w-7xl mx-auto px-4">
           <div className="w-full flex justify-between items-center py-6">
@@ -343,24 +375,25 @@ export default function Home() {
         </footer>
       </div>
 
-      <AuthModal
-        isOpen={authModalOpen}
-        onClose={() => {
-          // Prevent closing modal during password update
-          if (activeTab === 'update-password' && searchParams.get('type') === 'recovery') {
-            return;
-          }
-          setAuthModalOpen(false);
-        }}
-        onLogin={handleLogin}
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
-      />
+      <Suspense fallback={null}>
+        <AuthModal
+          isOpen={authModalOpen}
+          onClose={() => {
+            if (activeTab === 'update-password' && typeof window !== 'undefined' && window.location.search.includes('type=recovery')) {
+              return;
+            }
+            setAuthModalOpen(false);
+          }}
+          onLogin={handleLogin}
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+        />
 
-      <PremiumModal
-        isOpen={premiumModalOpen}
-        onClose={() => setPremiumModalOpen(false)}
-      />
+        <PremiumModal
+          isOpen={premiumModalOpen}
+          onClose={() => setPremiumModalOpen(false)}
+        />
+      </Suspense>
     </main>
   );
 }

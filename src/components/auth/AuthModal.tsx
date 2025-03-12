@@ -15,7 +15,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Check, Eye, EyeOff, ArrowLeft } from "lucide-react";
 import { signIn, signUp, getProfile, resetPassword, updatePassword, checkExistingEmail } from "@/lib/supabase";
 import { toast } from "sonner";
-import { useSearchParams } from "next/navigation";
+import RecoveryHandler from "./RecoveryHandler";
 
 type TabType = "login" | "register" | "forgot-password" | "update-password";
 
@@ -34,7 +34,6 @@ const AuthModal = ({
   activeTab: propActiveTab,
   setActiveTab: propSetActiveTab,
 }: AuthModalProps) => {
-  const searchParams = useSearchParams();
   const [localActiveTab, setLocalActiveTab] = useState<TabType>("register");
   const activeTab = propActiveTab || localActiveTab;
   const setActiveTab = propSetActiveTab || setLocalActiveTab;
@@ -46,13 +45,6 @@ const AuthModal = ({
   const [rememberMe, setRememberMe] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-
-  useEffect(() => {
-    // Check if we're returning from a password reset
-    if (searchParams.get("type") === "recovery") {
-      setActiveTab("update-password");
-    }
-  }, [searchParams]);
 
   // Update isSignUp whenever activeTab changes
   useEffect(() => {
@@ -264,6 +256,7 @@ const AuthModal = ({
   return (
     <Dialog open={isOpen} onOpenChange={onClose} modal={true}>
       <DialogContent className="sm:max-w-[425px] bg-white border-[#eaeaea] text-black">
+        <RecoveryHandler setActiveTab={setActiveTab} />
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold text-center text-black">
             {activeTab === "update-password" ? "Update Password" : "MetaMind"}
