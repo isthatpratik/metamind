@@ -10,6 +10,8 @@ import AuthModal from "@/components/auth/AuthModal";
 import PremiumModal from "@/components/premium/PremiumModal";
 import SearchParamsClient from "@/components/SearchParamsClient";
 import { FlickeringGrid } from "@/components/magicui/flickering-grid";
+import { supabase, getProfile, savePromptHistory, signOut, getPromptHistory } from "@/lib/supabase";
+import { toast } from "sonner";
 
 interface Message {
   id: string;
@@ -21,6 +23,7 @@ interface Message {
 }
 
 interface User {
+  id: string;
   email: string;
   name: string;
 }
@@ -36,10 +39,10 @@ export default function ChatPage() {
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [premiumModalOpen, setPremiumModalOpen] = useState(false);
   const [promptCount, setPromptCount] = useState(0);
-  const [selectedTool, setSelectedTool] = useState<
-    "V0" | "Cursor" | "Bolt" | "Tempo"
-  >("Tempo");
+  const [selectedTool, setSelectedTool] = useState<"V0" | "Cursor" | "Bolt" | "Tempo">("Tempo");
   const MAX_FREE_PROMPTS = 5;
+  const [prompts, setPrompts] = useState<Message[]>([]);
+  const [copiedPrompts, setCopiedPrompts] = useState<Record<string, boolean>>({});
 
   // Handle clicks outside the menu to close it
   useEffect(() => {
@@ -54,21 +57,24 @@ export default function ChatPage() {
     };
   }, []);
 
-  // Set the selected tool from URL parameter
-
-  // Check for user in localStorage on mount
+  // Check for authenticated user and get profile
   useEffect(() => {
-    const storedUser = localStorage.getItem("metamind_user");
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
-    } else {
-      setAuthModalOpen(true);
-    }
+    const checkUser = async () => {
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError) {
+        console.error("Error getting session:", sessionError);
+        return;
+      }
 
-    const storedPromptCount = localStorage.getItem("metamind_prompt_count");
-    if (storedPromptCount) {
-      setPromptCount(parseInt(storedPromptCount, 10));
-    }
+      if (session?.user) {
+        await fetchUserData(session.user.id);
+      } else {
+        setAuthModalOpen(true);
+      }
+    };
+
+    checkUser();
   }, []);
 
   // Show welcome message only when user logs in
@@ -86,10 +92,63 @@ export default function ChatPage() {
     }
   }, [user, messages.length, selectedTool]);
 
-  // Redirect to tool selection if no tool is selected
-  useEffect(() => {
-    router.prefetch("/");
-  }, [router]);
+  // Function to fetch user data and prompt history
+  const fetchUserData = async (userId: string) => {
+    try {
+      const { data: profile, error: profileError } = await getProfile(userId);
+      
+      if (profileError) {
+        console.error("Error getting profile:", profileError);
+        return;
+      }
+
+      if (profile) {
+        setUser({
+          id: userId,
+          email: profile.email || "",
+          name: profile.name || profile.email?.split("@")[0] || "",
+        });
+        
+        // Get prompt count from profile
+        setPromptCount(profile.prompt_count || 0);
+
+        // Check if prompts should be reset (30 days passed)
+        const lastReset = new Date(profile.last_prompt_reset);
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+        if (lastReset < thirtyDaysAgo) {
+          // Reset prompt count
+          await supabase
+            .from('profiles')
+            .update({
+              prompt_count: 0,
+              last_prompt_reset: new Date().toISOString(),
+            })
+            .eq('id', userId);
+          setPromptCount(0);
+        }
+
+        // Get prompt history
+        const { data: promptHistory, error: historyError } = await getPromptHistory(userId);
+        
+        if (historyError) {
+          console.error("Error getting prompt history:", historyError);
+          toast.error("Error loading prompt history", {
+            description: "Please try again later"
+          });
+        } else {
+          setPrompts(promptHistory || []);
+          // Update prompt count based on history if needed
+          if (promptHistory && (!profile.prompt_count || profile.prompt_count < promptHistory.length)) {
+            setPromptCount(promptHistory.length);
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching user data:", error);
+    }
+  };
 
   const handleSendMessage = async (message: string) => {
     try {
@@ -118,19 +177,12 @@ export default function ChatPage() {
 
       setMessages((prev) => [...prev, userMessage]);
 
-      // Show loading indicator immediately after user input
-      setIsLoading(true);
-
-      // Call OpenAI API with a timeout for better performance
+      // Call OpenAI API with a timeout
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
+      const timeoutId = setTimeout(() => controller.abort(), 60000);
 
       try {
-        const aiResponse = await generateAIResponse(
-          message,
-          selectedTool,
-          controller.signal
-        );
+        const aiResponse = await generateAIResponse(message, selectedTool, controller.signal);
         clearTimeout(timeoutId);
 
         // Play sound effect
@@ -146,54 +198,55 @@ export default function ChatPage() {
           }, 500);
         }
 
-        // Add AI response to the chat after a short delay
+        // Save to prompt history
+        const { error: historyError } = await savePromptHistory(
+          user.id,
+          message,
+          aiResponse,
+          selectedTool
+        );
+
+        if (historyError) {
+          console.error("Error saving prompt history:", historyError);
+        }
+
+        // Update prompt count
+        const { error: updateError } = await supabase
+          .from('profiles')
+          .update({ prompt_count: promptCount + 1 })
+          .eq('id', user.id);
+
+        if (updateError) {
+          console.error("Error updating prompt count:", updateError);
+        } else {
+          setPromptCount(prev => prev + 1);
+        }
+
+        // Add AI response to the chat
         setTimeout(() => {
           const aiMessage: Message = {
             id: (Date.now() + 1).toString(),
             message: aiResponse,
             isUser: false,
             timestamp: new Date().toLocaleTimeString(),
-            syntaxHighlight: aiResponse.includes("```") || true, // Always use syntax highlighting for prompts
+            syntaxHighlight: true,
             toolType: selectedTool,
           };
 
           setMessages((prev) => [...prev, aiMessage]);
-
-          // Save prompt to history
-          const promptToSave = {
-            id: (Date.now() + 1).toString(),
-            message: aiResponse,
-            timestamp: new Date().toLocaleTimeString(),
-            toolType: selectedTool,
-          };
-
-          const storedPrompts = localStorage.getItem("metamind_prompts");
-          const prompts = storedPrompts ? JSON.parse(storedPrompts) : [];
-          prompts.push(promptToSave);
-          localStorage.setItem("metamind_prompts", JSON.stringify(prompts));
-
-          // No confetti animation
         }, 1000);
 
-        // Increment prompt count and save to localStorage
-        const newPromptCount = promptCount + 1;
-        setPromptCount(newPromptCount);
-        localStorage.setItem(
-          "metamind_prompt_count",
-          newPromptCount.toString()
-        );
       } catch (err) {
         clearTimeout(timeoutId);
         throw err;
       }
     } catch (error: any) {
-      // Add error message
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         message:
           error.name === "AbortError"
             ? "Request timed out. Please try again with a simpler query."
-            : "Sorry, there was an error processing your request. Please check your API key and try again.",
+            : "Sorry, there was an error processing your request. Please try again.",
         isUser: false,
         timestamp: new Date().toLocaleTimeString(),
         toolType: selectedTool,
@@ -207,22 +260,131 @@ export default function ChatPage() {
     }
   };
 
-  const handleLogin = (userData: User) => {
-    setUser(userData);
-    localStorage.setItem("metamind_user", JSON.stringify(userData));
+  const handleLogin = async (userData: { email: string; name: string; id: string; promptCount: number }) => {
+    setUser({
+      id: userData.id,
+      email: userData.email,
+      name: userData.name,
+    });
+    
+    // Get fresh prompt count after login
+    const { data: profile } = await getProfile(userData.id);
+    const { data: promptHistory } = await getPromptHistory(userData.id);
+    
+    // Use the most accurate count available
+    const actualCount = Math.max(
+      profile?.prompt_count || 0,
+      promptHistory?.length || 0,
+      userData.promptCount
+    );
+    
+    setPromptCount(actualCount);
     setAuthModalOpen(false);
   };
 
-  const handleLogout = () => {
-    setUser(null);
-    setMessages([]);
-    setPromptCount(0);
-    localStorage.removeItem("metamind_user");
-    localStorage.removeItem("metamind_prompt_count");
+  const handleLogout = async () => {
+    const { error } = await signOut();
+    if (error) {
+      toast.error("Error logging out", {
+        description: error.message
+      });
+      return;
+    }
     router.push("/");
   };
 
+  const copyToClipboard = async (text: string, promptId: string) => {
+    try {
+      // Try the modern clipboard API first
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(text);
+      } else {
+        // Fallback for Safari and older browsers
+        const textArea = document.createElement('textarea');
+        textArea.value = text;
+        textArea.style.position = 'fixed';
+        textArea.style.left = '-999999px';
+        textArea.style.top = '-999999px';
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        
+        try {
+          document.execCommand('copy');
+        } catch (err) {
+          console.error('Fallback copy failed:', err);
+          throw new Error('Copy failed');
+        } finally {
+          document.body.removeChild(textArea);
+        }
+      }
+
+      // Update state and show success toast
+      setCopiedPrompts((prev) => ({ ...prev, [promptId]: true }));
+      toast.success("Copied to clipboard", {
+        description: "The prompt has been copied to your clipboard",
+        duration: 2000
+      });
+
+      // Reset the copy state after 2 seconds
+      setTimeout(() => {
+        setCopiedPrompts((prev) => ({ ...prev, [promptId]: false }));
+      }, 2000);
+    } catch (err) {
+      console.error('Copy failed:', err);
+      toast.error("Failed to copy", {
+        description: "Please try selecting and copying the text manually",
+        duration: 3000
+      });
+    }
+  };
+
   const currentYear = new Date().getFullYear();
+
+  // Listen for auth state changes
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_IN' && session?.user) {
+        // Get user profile and prompt history
+        const { data: profile, error: profileError } = await getProfile(session.user.id);
+        
+        if (profileError) {
+          console.error("Error getting profile:", profileError);
+          return;
+        }
+
+        if (profile) {
+          setUser({
+            id: session.user.id,
+            email: session.user.email || "",
+            name: profile.name || session.user.email?.split("@")[0] || "",
+          });
+
+          // Get prompt history to ensure accurate count
+          const { data: promptHistory, error: historyError } = await getPromptHistory(session.user.id);
+          
+          if (historyError) {
+            console.error("Error getting prompt history:", historyError);
+          } else {
+            // Set prompt count based on the most accurate source
+            const actualCount = Math.max(
+              profile.prompt_count || 0,
+              promptHistory?.length || 0
+            );
+            setPromptCount(actualCount);
+          }
+        }
+      } else if (event === 'SIGNED_OUT') {
+        setUser(null);
+        setPromptCount(0);
+        setMessages([]);
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
 
   return (
     <Suspense fallback={<div>Loading...</div>}>

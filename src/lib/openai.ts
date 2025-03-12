@@ -27,7 +27,7 @@ export async function generateAIResponse(
         Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: "gpt-4o-mini",
+        model: "gpt-4o",
         messages: [
           {
             role: "system",
@@ -41,7 +41,7 @@ export async function generateAIResponse(
           },
         ],
         temperature: 0.7,
-        max_tokens: 1200,
+        max_tokens: 4096,
         stream: true,
       }),
       signal,

@@ -8,8 +8,11 @@ import PremiumModal from "@/components/premium/PremiumModal";
 import Image from "next/image";
 import { FlickeringGrid } from "@/components/magicui/flickering-grid";
 import { MagicCard } from "@/components/magicui/magic-card";
+import { supabase, getProfile, signOut, getPromptHistory } from "@/lib/supabase";
+import { toast } from "sonner";
 
 interface User {
+  id: string;
   email: string;
   name: string;
 }
@@ -23,9 +26,7 @@ export default function Home() {
   const [user, setUser] = useState<User | null>(null);
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [promptCount, setPromptCount] = useState(0);
-  const [selectedTool, setSelectedTool] = useState<
-    "V0" | "Cursor" | "Bolt" | "Tempo" | null
-  >(null);
+  const [selectedTool, setSelectedTool] = useState<"V0" | "Cursor" | "Bolt" | "Tempo" | null>(null);
   const MAX_FREE_PROMPTS = 5;
 
   // Handle clicks outside the menu to close it
@@ -41,33 +42,95 @@ export default function Home() {
     };
   }, []);
 
-  // Check for user in localStorage on mount
+  // Listen for auth state changes
   useEffect(() => {
-    const storedUser = localStorage.getItem("metamind_user");
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
-    }
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_IN' && session?.user) {
+        // Get user profile and prompt history
+        const { data: profile, error: profileError } = await getProfile(session.user.id);
+        
+        if (profileError) {
+          console.error("Error getting profile:", profileError);
+          return;
+        }
 
-    const storedPromptCount = localStorage.getItem("metamind_prompt_count");
-    if (storedPromptCount) {
-      setPromptCount(parseInt(storedPromptCount, 10));
-    }
+        if (profile) {
+          setUser({
+            id: session.user.id,
+            email: session.user.email || "",
+            name: profile.name || session.user.email?.split("@")[0] || "",
+          });
+
+          // Get prompt history to ensure accurate count
+          const { data: promptHistory, error: historyError } = await getPromptHistory(session.user.id);
+          
+          if (historyError) {
+            console.error("Error getting prompt history:", historyError);
+          } else {
+            // Set prompt count based on the most accurate source
+            const actualCount = Math.max(
+              profile.prompt_count || 0,
+              promptHistory?.length || 0
+            );
+            setPromptCount(actualCount);
+          }
+        }
+      } else if (event === 'SIGNED_OUT') {
+        setUser(null);
+        setPromptCount(0);
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
-  const handleLogin = (userData: User) => {
-    setUser(userData);
-    localStorage.setItem("metamind_user", JSON.stringify(userData));
+  const handleLogin = async (userData: { email: string; name: string; id: string; promptCount: number }) => {
+    setUser({
+      id: userData.id,
+      email: userData.email,
+      name: userData.name,
+    });
+    
+    // Get fresh prompt count after login
+    const { data: profile } = await getProfile(userData.id);
+    const { data: promptHistory } = await getPromptHistory(userData.id);
+    
+    // Use the most accurate count available
+    const actualCount = Math.max(
+      profile?.prompt_count || 0,
+      promptHistory?.length || 0,
+      userData.promptCount
+    );
+    
+    setPromptCount(actualCount);
     setAuthModalOpen(false);
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    const { error } = await signOut();
+    if (error) {
+      toast.error("Error logging out", {
+        description: error.message,
+      });
+      return;
+    }
     setUser(null);
     setPromptCount(0);
-    localStorage.removeItem("metamind_user");
-    localStorage.removeItem("metamind_prompt_count");
   };
 
-  const handleToolSelect = (tool: "V0" | "Cursor" | "Bolt" | "Tempo") => {
+  const handleToolSelect = async (tool: "V0" | "Cursor" | "Bolt" | "Tempo") => {
+    if (!user) {
+      setAuthModalOpen(true);
+      return;
+    }
+
+    if (promptCount >= MAX_FREE_PROMPTS) {
+      setPremiumModalOpen(true);
+      return;
+    }
+
     setSelectedTool(tool);
     router.push(`/chat?tool=${tool}`);
   };
@@ -196,10 +259,10 @@ export default function Home() {
           <div className="absolute inset-0 overflow-hidden flex items-center justify-center">
             <FlickeringGrid
               className="relative z-0 [mask-image:radial-gradient(600px_circle_at_center,white,transparent)]"
-              squareSize={4}
+              squareSize={5}
               gridGap={6}
               colors={["#A07CFE", "#FE8FB5", "#FFBE7B"]}
-              maxOpacity={0.5}
+              maxOpacity={0.6}
               flickerChance={0.1}
             />
           </div>
@@ -249,7 +312,7 @@ export default function Home() {
           </div>
         </div>
 
-        <footer className="text-center text-xs text-gray-500 py-6 relative">
+        <footer className="text-center bg-transparent text-xs text-gray-500 py-6 relative">
           <p>
             © {currentYear} MetaMind - Product prompt generator by{" "}
             <Link
@@ -265,7 +328,7 @@ export default function Home() {
 
       <AuthModal
         isOpen={authModalOpen}
-        onClose={() => (user ? setAuthModalOpen(false) : null)}
+        onClose={() => setAuthModalOpen(false)}
         onLogin={handleLogin}
         activeTab={activeTab}
         setActiveTab={setActiveTab}

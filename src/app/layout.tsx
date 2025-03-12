@@ -1,9 +1,8 @@
-import { TempoInit } from "@/components/tempo-init";
 import type { Metadata } from "next";
 import { Fustat } from "next/font/google";
-import Script from "next/script";
 import { ThemeProvider } from "@/components/theme-provider";
 import "./globals.css";
+import { Toaster } from "@/components/ui/sonner";
 
 const fustat = Fustat({
   subsets: ["latin"],
@@ -13,7 +12,7 @@ const fustat = Fustat({
 export const metadata: Metadata = {
   title: "MetaMind Prompt Generator by Ampersand",
   description:
-    "Get customized instructions for AI tools like V0, Cursor, Bolt, and Tempo",
+    "Get customized prompts for AI tools like V0, Cursor, Bolt, and Tempo",
 };
 
 export default function RootLayout({
@@ -30,6 +29,7 @@ export default function RootLayout({
           enableSystem={true}
         >
           {children}
+          <Toaster />
         </ThemeProvider>
       </body>
     </html>

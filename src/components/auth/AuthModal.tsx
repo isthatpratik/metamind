@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -12,13 +12,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useToast } from "@/components/ui/use-toast";
 import { Check } from "lucide-react";
+import { signIn, signUp, getProfile } from "@/lib/supabase";
+import { toast } from "sonner";
 
 interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onLogin: (user: { email: string; name: string }) => void;
+  onLogin: (user: { email: string; name: string; id: string; promptCount: number }) => void;
   activeTab?: "login" | "register";
   setActiveTab?: (tab: "login" | "register") => void;
 }
@@ -30,10 +31,7 @@ const AuthModal = ({
   activeTab: propActiveTab,
   setActiveTab: propSetActiveTab,
 }: AuthModalProps) => {
-  const [localActiveTab, setLocalActiveTab] = useState<"login" | "register">(
-    "register",
-  );
-
+  const [localActiveTab, setLocalActiveTab] = useState<"login" | "register">("register");
   const activeTab = propActiveTab || localActiveTab;
   const setActiveTab = propSetActiveTab || setLocalActiveTab;
   const [email, setEmail] = useState("");
@@ -41,46 +39,95 @@ const AuthModal = ({
   const [name, setName] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
-  const { toast } = useToast();
+  const [isSignUp, setIsSignUp] = useState(false);
+
+  // Update isSignUp whenever activeTab changes
+  useEffect(() => {
+    setIsSignUp(activeTab === "register");
+  }, [activeTab]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
     try {
-      // Simulate authentication delay
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      if (activeTab === "register") {
+        if (password.length < 6) {
+          toast.error("Password must be at least 6 characters long");
+          setIsLoading(false);
+          return;
+        }
 
-      // For demo purposes, just simulate successful auth
-      if (
-        email &&
-        (activeTab === "login" || (activeTab === "register" && name))
-      ) {
-        toast({
-          title:
-            activeTab === "login"
-              ? "Logged in successfully"
-              : "Registered successfully",
-          description: "Welcome to MetaMind Prompt Generator!",
-          duration: 3000,
+        const { data: signUpData, error: signUpError } = await signUp(email, password, name);
+        
+        if (signUpError) {
+          if (signUpError.message.includes("already registered")) {
+            toast.error("Email already registered", {
+              description: "Please try logging in instead"
+            });
+          } else {
+            toast.error("Registration failed", {
+              description: signUpError.message
+            });
+          }
+          setIsLoading(false);
+          return;
+        }
+
+        toast.success("Registration successful", {
+          description: "Please check your email to verify your account"
         });
-
-        onLogin({ email, name: name || email.split("@")[0] });
-        onClose();
+        setPassword("");
+        setActiveTab("login");
       } else {
-        toast({
-          title: "Error",
-          description: "Please fill in all required fields",
-          variant: "destructive",
-          duration: 3000,
+        const { data: signInData, error: signInError } = await signIn(email, password);
+        
+        if (signInError) {
+          if (signInError.message.includes("Invalid login credentials")) {
+            toast.error("Invalid email or password", {
+              description: "Please check your credentials and try again"
+            });
+          } else {
+            toast.error("Login failed", {
+              description: signInError.message
+            });
+          }
+          setIsLoading(false);
+          return;
+        }
+
+        if (!signInData?.user) {
+          toast.error("Login failed", {
+            description: "No user data received"
+          });
+          setIsLoading(false);
+          return;
+        }
+
+        // Get user profile
+        const { data: profile, error: profileError } = await getProfile(signInData.user.id);
+        
+        if (profileError) {
+          toast.error("Error", {
+            description: "Failed to load user profile"
+          });
+          setIsLoading(false);
+          return;
+        }
+
+        toast.success("Welcome back!");
+        onLogin({
+          id: signInData.user.id,
+          email: signInData.user.email || "",
+          name: profile?.name || signInData.user.email?.split("@")[0] || "",
+          promptCount: profile?.prompt_count || 0
         });
+        onClose();
       }
-    } catch (error) {
-      toast({
-        title: "Authentication failed",
-        description: "Please try again later",
-        variant: "destructive",
-        duration: 3000,
+    } catch (error: any) {
+      console.error("Auth error:", error);
+      toast.error("An error occurred", {
+        description: "Please try again later"
       });
     } finally {
       setIsLoading(false);
@@ -141,7 +188,9 @@ const AuthModal = ({
               </div>
               <div className="flex items-center space-x-2">
                 <div
-                  className={`w-5 h-5 border rounded-sm ${rememberMe ? "bg-black" : "bg-white"} border-[#eaeaea] flex items-center justify-center cursor-pointer`}
+                  className={`w-5 h-5 border rounded-sm ${
+                    rememberMe ? "bg-black" : "bg-white"
+                  } border-[#eaeaea] flex items-center justify-center cursor-pointer`}
                   onClick={() => setRememberMe(!rememberMe)}
                 >
                   {rememberMe && <Check className="h-4 w-4 text-white" />}

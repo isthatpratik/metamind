@@ -25,7 +25,7 @@ const PremiumModal = ({ isOpen, onClose }: PremiumModalProps) => {
             <span className="text-black font-bold">MetaMind Premium</span>
           </DialogTitle>
           <DialogDescription className="text-center text-black">
-            Unlock unlimited prompts and advanced features
+            Unlock more prompts and advanced features
           </DialogDescription>
         </DialogHeader>
 
@@ -36,7 +36,7 @@ const PremiumModal = ({ isOpen, onClose }: PremiumModalProps) => {
             <ul className="space-y-2 text-sm">
               <li className="flex items-center gap-2">
                 <SquareCheck className="w-5 h-5 text-black" />
-                <span>5 prompts per month</span>
+                <span>5 prompts</span>
               </li>
               <li className="flex items-center gap-2">
                 <SquareCheck className="w-5 h-5 text-black" />
@@ -55,12 +55,12 @@ const PremiumModal = ({ isOpen, onClose }: PremiumModalProps) => {
             </div>
             <h3 className="font-medium mb-2">Premium</h3>
             <p className="text-2xl font-bold mb-4">
-              $9.99<span className="text-sm font-normal">/month</span>
+              $3.99<span className="text-sm font-normal">/month</span>
             </p>
             <ul className="space-y-2 text-sm">
               <li className="flex items-center gap-2">
                 <SquareCheck className="w-5 h-5 text-black" />
-                <span>Unlimited prompts</span>
+                <span>150 prompts per month</span>
               </li>
               <li className="flex items-center gap-2">
                 <SquareCheck className="w-5 h-5 text-black" />
@@ -72,11 +72,7 @@ const PremiumModal = ({ isOpen, onClose }: PremiumModalProps) => {
               </li>
               <li className="flex items-center gap-2">
                 <SquareCheck className="w-5 h-5 text-black" />
-                <span>Save & organize prompts</span>
-              </li>
-              <li className="flex items-center gap-2">
-                <SquareCheck className="w-5 h-5 text-black" />
-                <span>Export to markdown/PDF</span>
+                <span>Prompt History</span>
               </li>
             </ul>
           </div>
