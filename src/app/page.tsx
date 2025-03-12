@@ -102,19 +102,19 @@ export default function Home() {
       <div className="w-full border-b border-[#eaeaea]">
         <div className="w-full max-w-7xl mx-auto px-4">
           <div className="w-full flex justify-between items-center py-6">
-            <div className="flex items-center gap-2">
+            <Link href="/" className="flex items-center gap-2">
               <Image
                 src="/images/logo.svg"
                 alt="MetaMind Logo"
                 width={40}
                 height={40}
               />
-            </div>
+            </Link>
             <div className="flex items-center gap-4">
               {user && (
-                <span className="text-sm font-medium">
-                  {promptCount} of {MAX_FREE_PROMPTS} Free Prompts
-                </span>
+                <span className="text-sm font-medium px-4 py-2 bg-white/80 backdrop-blur-sm border border-[#eaeaea] rounded-lg">
+                {promptCount} of {MAX_FREE_PROMPTS} Free Prompts
+              </span>
               )}
 
               {!user ? (
@@ -139,7 +139,7 @@ export default function Home() {
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => setPremiumModalOpen(true)}
-                    className="px-4 py-2 bg-gradient-to-r from-pink-600 via-purple-600 to-blue-600 text-white text-sm font-medium rounded-lg"
+                    className="px-4 py-2 bg-gradient-to-br from-pink-600 via-purple-600 to-blue-600 text-white text-sm font-medium rounded-lg"
                   >
                     Upgrade
                   </button>

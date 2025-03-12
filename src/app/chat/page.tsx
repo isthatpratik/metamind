@@ -1,6 +1,5 @@
 "use client";
 
-
 import React, { useState, useEffect, useRef, Suspense } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -10,6 +9,7 @@ import Link from "next/link";
 import AuthModal from "@/components/auth/AuthModal";
 import PremiumModal from "@/components/premium/PremiumModal";
 import SearchParamsClient from "@/components/SearchParamsClient";
+import { FlickeringGrid } from "@/components/magicui/flickering-grid";
 
 interface Message {
   id: string;
@@ -36,7 +36,9 @@ export default function ChatPage() {
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [premiumModalOpen, setPremiumModalOpen] = useState(false);
   const [promptCount, setPromptCount] = useState(0);
-  const [selectedTool, setSelectedTool] = useState<"V0" | "Cursor" | "Bolt" | "Tempo">("Tempo");
+  const [selectedTool, setSelectedTool] = useState<
+    "V0" | "Cursor" | "Bolt" | "Tempo"
+  >("Tempo");
   const MAX_FREE_PROMPTS = 5;
 
   // Handle clicks outside the menu to close it
@@ -88,7 +90,6 @@ export default function ChatPage() {
   useEffect(() => {
     router.prefetch("/");
   }, [router]);
-  
 
   const handleSendMessage = async (message: string) => {
     try {
@@ -227,17 +228,17 @@ export default function ChatPage() {
     <Suspense fallback={<div>Loading...</div>}>
       <SearchParamsClient setSelectedTool={setSelectedTool} />
       <main className="flex min-h-screen flex-col items-center justify-start bg-white text-black">
-        <div className="w-full border-b border-[#eaeaea]">
+        <div className="w-full border-b bg-white/80 border-[#eaeaea] z-50">
           <div className="w-full max-w-7xl mx-auto px-4">
             <div className="w-full flex justify-between items-center py-6">
-              <div className="flex items-center gap-2">
+              <Link href="/" className="flex items-center gap-2">
                 <Image
                   src="/images/logo.svg"
                   alt="MetaMind Logo"
                   width={40}
                   height={40}
                 />
-              </div>
+              </Link>
               <div className="flex items-center gap-4">
                 {user && (
                   <span className="text-sm font-medium px-4 py-2 bg-white/80 backdrop-blur-sm border border-[#eaeaea] rounded-lg">
@@ -277,7 +278,9 @@ export default function ChatPage() {
                         <div className="absolute right-0 mt-2 w-48 bg-white shadow-lg py-1 z-10 border border-[#eaeaea] rounded-lg">
                           <div className="px-4 py-2 border-b border-[#eaeaea]">
                             <p className="text-sm font-medium">{user.name}</p>
-                            <p className="text-xs text-gray-500">{user.email}</p>
+                            <p className="text-xs text-gray-500">
+                              {user.email}
+                            </p>
                           </div>
                           <Link
                             href="/prompt-history"
@@ -307,7 +310,18 @@ export default function ChatPage() {
               MetaMind Prompt Generator
             </h1>
           </div>
+          <div className="absolute inset-0 z-0 overflow-hidden flex items-center justify-center">
+            <FlickeringGrid
+              className="relative z-0 [mask-image:radial-gradient(800px_circle_at_center,white,transparent)]"
+              squareSize={4}
+              gridGap={6}
+              colors={["#A07CFE", "#FE8FB5", "#FFBE7B"]}
+              maxOpacity={0.5}
+              flickerChance={0.1}
+            />
+          </div>
           <div className="flex w-full py-4 relative border border-[#eaeaea] rounded-lg overflow-hidden bg-white/80 backdrop-blur-sm before:absolute before:inset-0 before:-translate-x-full before:animate-[shimmer_2s_infinite] before:bg-gradient-to-r before:from-transparent before:via-white/60 before:to-transparent">
+            
             <ChatInterface
               onSendMessage={handleSendMessage}
               isLoading={isLoading}
