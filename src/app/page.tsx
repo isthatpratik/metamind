@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import AuthModal from "@/components/auth/AuthModal";
 import PremiumModal from "@/components/premium/PremiumModal";
@@ -17,8 +17,10 @@ interface User {
   name: string;
 }
 
+type TabType = "login" | "register" | "forgot-password" | "update-password";
+
 export default function Home() {
-  const [activeTab, setActiveTab] = useState<"login" | "register">("login");
+  const [activeTab, setActiveTab] = useState<TabType>("login");
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const [premiumModalOpen, setPremiumModalOpen] = useState(false);
@@ -28,6 +30,20 @@ export default function Home() {
   const [promptCount, setPromptCount] = useState(0);
   const [selectedTool, setSelectedTool] = useState<"V0" | "Cursor" | "Bolt" | "Tempo" | null>(null);
   const MAX_FREE_PROMPTS = 5;
+  const searchParams = useSearchParams();
+
+  // Check for recovery parameter in URL
+  useEffect(() => {
+    const type = searchParams.get('type');
+    if (type === 'recovery') {
+      setActiveTab('update-password');
+      setAuthModalOpen(true);
+      // Remove the recovery parameter from URL
+      const newUrl = new URL(window.location.href);
+      newUrl.searchParams.delete('type');
+      window.history.replaceState({}, '', newUrl.toString());
+    }
+  }, [searchParams]);
 
   // Handle clicks outside the menu to close it
   useEffect(() => {
@@ -113,6 +129,7 @@ export default function Home() {
     if (error) {
       toast.error("Error logging out", {
         description: error.message,
+        descriptionClassName: "text-gray-500"
       });
       return;
     }
@@ -276,7 +293,7 @@ export default function Home() {
           </div>
 
           <div className="w-full max-w-4xl mx-auto flex justify-center">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-4xl">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 max-w-4xl">
               {tools.map((tool) => (
                 <MagicCard
                   key={tool.id}
@@ -328,7 +345,13 @@ export default function Home() {
 
       <AuthModal
         isOpen={authModalOpen}
-        onClose={() => setAuthModalOpen(false)}
+        onClose={() => {
+          // Prevent closing modal during password update
+          if (activeTab === 'update-password' && searchParams.get('type') === 'recovery') {
+            return;
+          }
+          setAuthModalOpen(false);
+        }}
         onLogin={handleLogin}
         activeTab={activeTab}
         setActiveTab={setActiveTab}

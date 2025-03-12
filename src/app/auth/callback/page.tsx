@@ -12,6 +12,7 @@ export default function AuthCallbackPage() {
       const { searchParams } = new URL(window.location.href);
       const code = searchParams.get('code');
       const next = searchParams.get('next') ?? '/';
+      const type = searchParams.get('type');
 
       if (code) {
         try {
@@ -24,7 +25,13 @@ export default function AuthCallbackPage() {
         }
       }
 
-      // Redirect to the home page or the specified next URL
+      // For password recovery flow, redirect with recovery parameter
+      if (type === 'recovery') {
+        router.push('/?type=recovery');
+        return;
+      }
+
+      // For other flows (like email verification), redirect to the specified next URL
       router.push(next);
     };
 

@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { supabase, getProfile, getPromptHistory, signOut } from "@/lib/supabase";
-import { toast } from "sonner";
+import { useToast } from "@/components/ui/use-toast";
+import { Toaster } from "@/components/ui/toaster";
 import PremiumModal from "@/components/premium/PremiumModal";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { CopyIcon, CheckIcon } from "@radix-ui/react-icons";
@@ -53,6 +54,7 @@ const formatDate = (date: string) => {
 
 export default function PromptHistoryPage() {
   const router = useRouter();
+  const { toast } = useToast();
   const [user, setUser] = useState<User | null>(null);
   const [prompts, setPrompts] = useState<PromptHistory[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -76,73 +78,13 @@ export default function PromptHistoryPage() {
     };
   }, []);
 
-  // Function to fetch user data and prompt history
-  const fetchUserData = async (userId: string) => {
-    try {
-      const { data: profile, error: profileError } = await getProfile(userId);
-      
-      if (profileError) {
-        console.error("Error getting profile:", profileError);
-        return;
-      }
-
-      if (profile) {
-        setUser({
-          id: userId,
-          email: profile.email || "",
-          name: profile.name || profile.email?.split("@")[0] || "",
-        });
-        
-        // Get prompt count from profile
-        setPromptCount(profile.prompt_count || 0);
-
-        // Get prompt history
-        const { data: promptHistory, error: historyError } = await getPromptHistory(userId);
-        
-        if (historyError) {
-          console.error("Error getting prompt history:", historyError);
-          toast.error("Error loading prompt history", {
-            description: "Please try again later"
-          });
-        } else {
-          setPrompts(promptHistory || []);
-          // Update prompt count based on history if needed
-          if (promptHistory && (!profile.prompt_count || profile.prompt_count < promptHistory.length)) {
-            setPromptCount(promptHistory.length);
-          }
-        }
-      }
-    } catch (error) {
-      console.error("Error fetching user data:", error);
-    }
-  };
-
-  // Listen for auth state changes
-  useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === 'SIGNED_IN' && session?.user) {
-        await fetchUserData(session.user.id);
-      } else if (event === 'SIGNED_OUT') {
-        setUser(null);
-        setPrompts([]);
-        setPromptCount(0);
-      }
-    });
-
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, []);
-
-  // Initial check for existing session
   useEffect(() => {
     const checkUser = async () => {
-      setIsLoading(true);
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       
       if (sessionError) {
         console.error("Error getting session:", sessionError);
-      router.push("/");
+        router.push("/");
         return;
       }
 
@@ -151,7 +93,36 @@ export default function PromptHistoryPage() {
         return;
       }
 
-      await fetchUserData(session.user.id);
+      const { data: profile, error: profileError } = await getProfile(session.user.id);
+      
+      if (profileError) {
+        console.error("Error getting profile:", profileError);
+        return;
+      }
+
+      if (profile) {
+        setUser({
+          id: session.user.id,
+          email: session.user.email || "",
+          name: profile.name || session.user.email?.split("@")[0] || "",
+        });
+        setPromptCount(profile.prompt_count || 0);
+
+        // Get prompt history
+        const { data: promptHistory, error: historyError } = await getPromptHistory(session.user.id);
+        
+        if (historyError) {
+          console.error("Error getting prompt history:", historyError);
+          toast({
+            title: "Error loading prompt history",
+            description: "Please try again later",
+            variant: "destructive",
+          });
+        } else {
+          setPrompts(promptHistory || []);
+        }
+      }
+
       setIsLoading(false);
     };
 
@@ -161,8 +132,10 @@ export default function PromptHistoryPage() {
   const handleLogout = async () => {
     const { error } = await signOut();
     if (error) {
-      toast.error("Error logging out", {
-        description: error.message
+      toast({
+        title: "Error logging out",
+        description: error.message,
+        variant: "destructive",
       });
       return;
     }
@@ -197,9 +170,10 @@ export default function PromptHistoryPage() {
 
       // Update state and show success toast
       setCopiedPrompts((prev) => ({ ...prev, [promptId]: true }));
-      toast.success("Copied to clipboard", {
+      toast({
+        title: "Copied to clipboard",
         description: "The prompt has been copied to your clipboard",
-        duration: 2000
+        duration: 2000,
       });
 
       // Reset the copy state after 2 seconds
@@ -208,9 +182,11 @@ export default function PromptHistoryPage() {
       }, 2000);
     } catch (err) {
       console.error('Copy failed:', err);
-      toast.error("Failed to copy", {
+      toast({
+        title: "Failed to copy",
         description: "Please try selecting and copying the text manually",
-        duration: 3000
+        variant: "destructive",
+        duration: 3000,
       });
     }
   };
@@ -229,12 +205,12 @@ export default function PromptHistoryPage() {
         <div className="w-full max-w-7xl mx-auto px-4">
           <div className="w-full flex justify-between items-center py-6">
             <Link href="/" className="flex items-center gap-2">
-                <Image
-                  src="/images/logo.svg"
-                  alt="MetaMind Logo"
-                  width={40}
-                  height={40}
-                />
+              <Image
+                src="/images/logo.svg"
+                alt="MetaMind Logo"
+                width={40}
+                height={40}
+              />
             </Link>
             <div className="flex items-center gap-4">
               {user && (
@@ -389,6 +365,7 @@ export default function PromptHistoryPage() {
         isOpen={premiumModalOpen}
         onClose={() => setPremiumModalOpen(false)}
       />
+      <Toaster />
     </main>
   );
 }

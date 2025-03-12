@@ -47,6 +47,41 @@ export const signOut = async () => {
   return { error };
 };
 
+export const checkExistingEmail = async (email: string) => {
+  const { data, error } = await supabase.auth.signInWithOtp({
+    email,
+    options: {
+      shouldCreateUser: false,
+    },
+  });
+  // If no error, email exists
+  return { exists: !error };
+};
+
+export const resetPassword = async (email: string) => {
+  const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${window.location.origin}/auth/callback?type=recovery`,
+  });
+  return { data, error };
+};
+
+export const updatePassword = async (newPassword: string) => {
+  try {
+    const { data, error } = await supabase.auth.updateUser({
+      password: newPassword
+    });
+
+    if (error) {
+      console.error('Error updating password:', error);
+    }
+
+    return { data, error };
+  } catch (error) {
+    console.error('Exception updating password:', error);
+    return { data: null, error: error as any };
+  }
+};
+
 // Helper functions for profiles
 export const getProfile = async (userId: string) => {
   const { data, error } = await supabase
