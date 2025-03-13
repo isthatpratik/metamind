@@ -4,12 +4,24 @@ import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { supabase, getProfile, getPromptHistory, signOut } from "@/lib/supabase";
+import {
+  supabase,
+  getProfile,
+  getPromptHistory,
+  signOut,
+} from "@/lib/supabase";
 import { useToast } from "@/components/ui/use-toast";
 import { Toaster } from "@/components/ui/toaster";
 import PremiumModal from "@/components/premium/PremiumModal";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { CopyIcon, CheckIcon } from "@radix-ui/react-icons";
+import { useTheme } from "next-themes";
+import { ThemeSwitcher } from "@/components/theme-switcher";
 
 interface PromptHistory {
   id: string;
@@ -26,29 +38,34 @@ interface User {
 }
 
 const TOOL_LOGOS = {
-  "V0": "/images/v0.png",
-  "Cursor": "/images/cursor.jpg",
-  "Bolt": "/images/bolt.png",
-  "Tempo": "/images/tempo.jpg"
+  V0: "/images/v0.png",
+  Cursor: "/images/cursor.jpg",
+  Bolt: "/images/bolt.png",
+  Tempo: "/images/tempo.jpg",
 } as const;
 
 const getPromptSummary = (message: string): string => {
   // Remove common prefixes that might appear in prompts
-  const cleanMessage = message.replace(/^(please|can you|could you|help me|i want to|i need to|how to)/i, '').trim();
-  
+  const cleanMessage = message
+    .replace(
+      /^(please|can you|could you|help me|i want to|i need to|how to)/i,
+      ""
+    )
+    .trim();
+
   // Split into words and get first 6 words
   const words = cleanMessage.split(/\s+/);
-  const summary = words.slice(0, 6).join(' ');
-  
+  const summary = words.slice(0, 6).join(" ");
+
   // Add ellipsis if the message is longer
   return words.length > 6 ? `${summary}...` : summary;
 };
 
 const formatDate = (date: string) => {
-  return new Date(date).toLocaleDateString('en-US', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric'
+  return new Date(date).toLocaleDateString("en-US", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
   });
 };
 
@@ -62,8 +79,11 @@ export default function PromptHistoryPage() {
   const menuRef = useRef<HTMLDivElement>(null);
   const [promptCount, setPromptCount] = useState(0);
   const [premiumModalOpen, setPremiumModalOpen] = useState(false);
-  const [copiedPrompts, setCopiedPrompts] = useState<{ [key: string]: boolean }>({});
+  const [copiedPrompts, setCopiedPrompts] = useState<{
+    [key: string]: boolean;
+  }>({});
   const MAX_FREE_PROMPTS = 5;
+  const { theme } = useTheme();
 
   // Handle clicks outside the menu to close it
   useEffect(() => {
@@ -80,8 +100,11 @@ export default function PromptHistoryPage() {
 
   useEffect(() => {
     const checkUser = async () => {
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      
+      const {
+        data: { session },
+        error: sessionError,
+      } = await supabase.auth.getSession();
+
       if (sessionError) {
         console.error("Error getting session:", sessionError);
         router.push("/");
@@ -93,8 +116,10 @@ export default function PromptHistoryPage() {
         return;
       }
 
-      const { data: profile, error: profileError } = await getProfile(session.user.id);
-      
+      const { data: profile, error: profileError } = await getProfile(
+        session.user.id
+      );
+
       if (profileError) {
         console.error("Error getting profile:", profileError);
         return;
@@ -109,8 +134,9 @@ export default function PromptHistoryPage() {
         setPromptCount(profile.prompt_count || 0);
 
         // Get prompt history
-        const { data: promptHistory, error: historyError } = await getPromptHistory(session.user.id);
-        
+        const { data: promptHistory, error: historyError } =
+          await getPromptHistory(session.user.id);
+
         if (historyError) {
           console.error("Error getting prompt history:", historyError);
           toast({
@@ -149,20 +175,20 @@ export default function PromptHistoryPage() {
         await navigator.clipboard.writeText(text);
       } else {
         // Fallback for Safari and older browsers
-        const textArea = document.createElement('textarea');
+        const textArea = document.createElement("textarea");
         textArea.value = text;
-        textArea.style.position = 'fixed';
-        textArea.style.left = '-999999px';
-        textArea.style.top = '-999999px';
+        textArea.style.position = "fixed";
+        textArea.style.left = "-999999px";
+        textArea.style.top = "-999999px";
         document.body.appendChild(textArea);
         textArea.focus();
         textArea.select();
-        
+
         try {
-          document.execCommand('copy');
+          document.execCommand("copy");
         } catch (err) {
-          console.error('Fallback copy failed:', err);
-          throw new Error('Copy failed');
+          console.error("Fallback copy failed:", err);
+          throw new Error("Copy failed");
         } finally {
           document.body.removeChild(textArea);
         }
@@ -181,7 +207,7 @@ export default function PromptHistoryPage() {
         setCopiedPrompts((prev) => ({ ...prev, [promptId]: false }));
       }, 2000);
     } catch (err) {
-      console.error('Copy failed:', err);
+      console.error("Copy failed:", err);
       toast({
         title: "Failed to copy",
         description: "Please try selecting and copying the text manually",
@@ -200,24 +226,32 @@ export default function PromptHistoryPage() {
   }
 
   return (
-    <main className="flex min-h-screen flex-col items-center bg-white text-black">
-      <div className="w-full border-b border-[#eaeaea]">
+    <main className="flex min-h-screen flex-col items-center bg-white dark:bg-black dark:text-white text-black">
+      <div className="w-full">
         <div className="w-full max-w-7xl mx-auto px-4">
           <div className="w-full flex justify-between items-center py-6">
-            <Link href="/" className="flex items-center gap-2">
+            <Link href="/" className="flex items-center gap-2 w-25 h-auto">
               <Image
-                src="/images/logo.svg"
+                src={
+                  theme === "dark"
+                    ? "/images/metamind-dark.png"
+                    : "/images/metamind-light.png"
+                }
                 alt="MetaMind Logo"
-                width={40}
-                height={40}
+                width={200}
+                height={200}
+                className="object-contain"
               />
             </Link>
             <div className="flex items-center gap-4">
+
+              <ThemeSwitcher />
+
               {user && (
-                <span className="text-sm font-medium px-4 py-2 bg-white/80 backdrop-blur-sm border border-[#eaeaea] rounded-lg">
-                  {promptCount} of {MAX_FREE_PROMPTS} Free Prompts
-                </span>
-              )}
+                  <span className="text-sm font-medium px-4 py-2 bg-white/80 dark:bg-transparent backdrop-blur-sm border border-[#eaeaea] rounded-lg">
+                    {promptCount} of {MAX_FREE_PROMPTS} Free Prompts
+                  </span>
+                )}
 
               {user && (
                 <div className="flex items-center gap-2">
@@ -230,7 +264,7 @@ export default function PromptHistoryPage() {
                   <div className="relative" ref={menuRef}>
                     <button
                       onClick={() => setMenuOpen(!menuOpen)}
-                      className="p-2 bg-white border border-[#eaeaea] rounded-lg hover:border-black transition-all"
+                      className="p-2 bg-white border border-[#eaeaea] dark:bg-transparent dark:border-white rounded-lg hover:border-black transition-all"
                     >
                       <svg
                         width="20"
@@ -250,10 +284,8 @@ export default function PromptHistoryPage() {
                     {menuOpen && user && (
                       <div className="absolute right-0 mt-2 w-48 bg-white shadow-lg py-1 z-10 border border-[#eaeaea] rounded-lg">
                         <div className="px-4 py-2 border-b border-[#eaeaea]">
-                          <p className="text-sm font-medium">{user.name}</p>
-                          <p className="text-xs text-gray-500">
-                            {user.email}
-                          </p>
+                          <p className="text-sm font-medium dark:text-black">{user.name}</p>
+                          <p className="text-xs text-gray-500">{user.email}</p>
                         </div>
                         <Link
                           href="/"
@@ -279,10 +311,12 @@ export default function PromptHistoryPage() {
 
       <div className="w-full max-w-7xl mx-auto px-4 py-8">
         <h1 className="text-3xl font-bold mb-8">Prompt History</h1>
-        
+
         {prompts.length === 0 ? (
           <div className="text-center py-12">
-            <p className="text-gray-500">No prompts yet. Start generating some prompts!</p>
+            <p className="text-gray-500">
+              No prompts yet. Start generating some prompts!
+            </p>
             <Link
               href="/"
               className="mt-4 inline-block px-4 py-2 bg-black text-white rounded-lg hover:bg-black/90"
@@ -296,7 +330,7 @@ export default function PromptHistoryPage() {
               <AccordionItem
                 key={prompt.id}
                 value={prompt.id}
-                className="border border-[#eaeaea] rounded-lg px-6"
+                className="border border-[#eaeaea] dark:border-white/70 rounded-lg px-6"
               >
                 <AccordionTrigger className="hover:no-underline [&[data-state=open]>svg]:rotate-180">
                   <div className="flex items-center justify-between w-full">
@@ -324,13 +358,15 @@ export default function PromptHistoryPage() {
                       <div className="flex items-center justify-between mb-2">
                         <h3 className="font-medium">Your Request</h3>
                         <div
-                          onClick={() => copyToClipboard(prompt.message, prompt.id)}
-                          className="p-2 hover:bg-[#f5f5f5] rounded-md transition-colors cursor-pointer"
+                          onClick={() =>
+                            copyToClipboard(prompt.message, prompt.id)
+                          }
+                          className="p-2 hover:bg-[#f5f5f5] dark:hover:bg-white/10 rounded-md transition-colors cursor-pointer"
                           title="Copy prompt"
                           role="button"
                           tabIndex={0}
                           onKeyDown={(e) => {
-                            if (e.key === 'Enter' || e.key === ' ') {
+                            if (e.key === "Enter" || e.key === " ") {
                               e.preventDefault();
                               copyToClipboard(prompt.message, prompt.id);
                             }
@@ -347,7 +383,7 @@ export default function PromptHistoryPage() {
                     </div>
                     <div>
                       <h3 className="font-medium mb-2">AI Response</h3>
-                      <div className="bg-[#f5f5f5] p-4 rounded-lg">
+                      <div className="bg-[#f5f5f5] dark:bg-white/10 dark:border dark:border-white/30 p-4 rounded-lg">
                         <pre className="whitespace-pre-wrap font-mono text-sm">
                           {prompt.ai_response}
                         </pre>

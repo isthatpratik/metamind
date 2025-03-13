@@ -56,7 +56,7 @@ const MessageInput = ({
   );
 
   return (
-    <div className="w-full bg-white p-4">
+    <div className="w-full bg-white dark:bg-black p-4">
       <form onSubmit={handleSubmit} className="flex gap-2">
         <Textarea
           ref={textareaRef}
@@ -66,7 +66,7 @@ const MessageInput = ({
           placeholder={placeholder}
           disabled={disabled || isLoading}
           className={cn(
-            "resize-none overflow-hidden bg-white rounded-lg border border-black/80 text-black focus:border-black focus:ring-0",
+            "resize-none overflow-hidden bg-white dark:bg-black dark:border-white dark:text-white rounded-lg border border-black/80 text-black focus:border-black focus:ring-0",
             isLoading && "opacity-70"
           )}
           rows={1} // Default single line
@@ -79,7 +79,7 @@ const MessageInput = ({
           aria-label="Send message"
         >
           {isLoading ? (
-            <div className="h-8 w-8 border-2 border-white border-t-transparent animate-spin"></div>
+            <div className="h-8 w-8 border-2 border-white dark:text-white border-t-transparent animate-spin"></div>
           ) : (
             <SendHorizonal className="h-8 w-8" />
           )}

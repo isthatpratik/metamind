@@ -3,6 +3,7 @@
 import { motion, useMotionTemplate, useMotionValue } from "framer-motion";
 import React, { useCallback, useEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
+import { useTheme } from "next-themes";
 
 interface MagicCardProps {
   children?: React.ReactNode;
@@ -25,6 +26,7 @@ export function MagicCard({
   gradientTo = "#9E7AFF",
   onClick,
 }: MagicCardProps) {
+  const { theme } = useTheme();
   const cardRef = useRef<HTMLDivElement>(null);
   const mouseX = useMotionValue(-gradientSize);
   const mouseY = useMotionValue(-gradientSize);
@@ -79,29 +81,35 @@ export function MagicCard({
   return (
     <div
       ref={cardRef}
-      className={cn("group relative rounded-[inherit] cursor-pointer", className)}
+      className={cn(
+        "group relative rounded-[inherit] cursor-pointer",
+        "dark:backdrop-blur-md dark:bg-white/5",
+        className
+      )}
       onClick={onClick}
     >
       <motion.div
-        className="pointer-events-none absolute inset-0 rounded-[inherit] bg-white duration-300 group-hover:opacity-100"
+        className="pointer-events-none absolute inset-0 rounded-[inherit] bg-white dark:bg-white/10 duration-300 group-hover:opacity-100"
         style={{
           background: useMotionTemplate`
           radial-gradient(${gradientSize}px circle at ${mouseX}px ${mouseY}px,
-          ${gradientFrom}, 
-          ${gradientTo}, 
-          hsl(var(--border)) 100%
+          ${theme === "dark" ? "rgba(255,255,255,0.1)" : gradientFrom}, 
+          ${theme === "dark" ? "rgba(255,255,255,0.05)" : gradientTo}, 
+          ${theme === "dark" ? "transparent" : "hsl(var(--border))"} 100%
           )
           `,
         }}
       />
-      <div className="absolute inset-px rounded-[inherit] bg-white" />
+      <div className="absolute inset-px rounded-[inherit] bg-white dark:bg-transparent dark:border dark:border-white/20" />
       <motion.div
         className="pointer-events-none absolute inset-px rounded-[inherit] opacity-0 transition-opacity duration-300 group-hover:opacity-100"
         style={{
           background: useMotionTemplate`
-            radial-gradient(${gradientSize}px circle at ${mouseX}px ${mouseY}px, ${gradientColor}, transparent 100%)
+            radial-gradient(${gradientSize}px circle at ${mouseX}px ${mouseY}px, 
+              ${theme === "dark" ? "rgba(255,255,255,0.15)" : gradientColor}, 
+              transparent 100%)
           `,
-          opacity: gradientOpacity,
+          opacity: theme === "dark" ? 0.3 : gradientOpacity,
         }}
       />
       <div className="relative">{children}</div>

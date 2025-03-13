@@ -85,7 +85,7 @@ const ChatInterface = ({
   );
 
   return (
-    <div className="w-full max-w-4xl mx-auto overflow-hidden rounded-lg flex flex-col h-full bg-white">
+    <div className="w-full max-w-4xl mx-auto overflow-hidden rounded-lg flex flex-col h-full bg-white dark:bg-black">
       {showToolSelector && (
         <div className="p-0">
           <MemoizedToolSelector

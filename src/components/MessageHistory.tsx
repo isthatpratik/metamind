@@ -59,7 +59,7 @@ const MessageHistory = ({
   }, [loading]);
 
   return (
-    <div className="w-full h-[480px] flex flex-col bg-white relative">
+    <div className="w-full h-[480px] flex flex-col bg-white dark:bg-black relative">
       <AnimatePresence>
         {!loading && messages.length > 0 && messages[messages.length - 1]?.isUser === false && (
           <motion.div

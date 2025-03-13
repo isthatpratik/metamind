@@ -255,13 +255,13 @@ const AuthModal = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose} modal={true}>
-      <DialogContent className="sm:max-w-[425px] bg-white border-[#eaeaea] text-black">
+      <DialogContent className="sm:max-w-[425px] bg-white dark:bg-black dark:text-white text-black">
         <RecoveryHandler setActiveTab={setActiveTab} />
         <DialogHeader>
-          <DialogTitle className="text-2xl font-bold text-center text-black">
+          <DialogTitle className="text-2xl font-bold text-center dark:text-white text-black">
             {activeTab === "update-password" ? "Update Password" : "MetaMind"}
           </DialogTitle>
-          <DialogDescription className="text-center text-black">
+          <DialogDescription className="text-center text-black dark:text-white">
             {activeTab === "update-password" 
               ? "Please enter your new password" 
               : "Join the community of AI prompt engineers"}
@@ -273,17 +273,17 @@ const AuthModal = ({
           value={activeTab}
           onValueChange={(v) => setActiveTab(v as TabType)}
         >
-          {activeTab !== "update-password" && (
+          {activeTab !== 'update-password' && activeTab !== 'forgot-password' && (
             <TabsList className="grid w-full grid-cols-2 bg-[#f5f5f5]">
-              <TabsTrigger value="login">Login</TabsTrigger>
-              <TabsTrigger value="register">Register</TabsTrigger>
+              <TabsTrigger value="login" className="dark:focus:text-white dark:text-black ">Login</TabsTrigger>
+              <TabsTrigger value="register" className="dark:focus:text-white dark:text-black">Register</TabsTrigger>
             </TabsList>
           )}
 
           <TabsContent value="login">
             <form onSubmit={handleSubmit} className="space-y-4 pt-4">
               <div className="space-y-2">
-                <Label htmlFor="email" className="text-black">
+                <Label htmlFor="email" className="text-black dark:text-white">
                   Email
                 </Label>
                 <Input
@@ -298,13 +298,13 @@ const AuthModal = ({
               </div>
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
-                  <Label htmlFor="password" className="text-black">
+                  <Label htmlFor="password" className="text-black dark:text-white">
                     Password
                   </Label>
                   <button
                     type="button"
                     onClick={() => setActiveTab("forgot-password")}
-                    className="text-sm text-gray-500 hover:text-black transition-colors"
+                    className="text-sm text-gray-500 hover:text-black dark:hover:text-white transition-colors"
                   >
                     Forgot password?
                   </button>
@@ -351,7 +351,7 @@ const AuthModal = ({
               </div>
               <Button
                 type="submit"
-                className="w-full bg-black hover:bg-black/90 text-white"
+                className="w-full bg-black hover:bg-black/90 text-white dark:bg-white dark:text-black"
                 disabled={isLoading}
               >
                 {isLoading ? (
@@ -366,7 +366,7 @@ const AuthModal = ({
           <TabsContent value="register">
             <form onSubmit={handleSubmit} className="space-y-4 pt-4">
               <div className="space-y-2">
-                <Label htmlFor="name" className="text-black">
+                <Label htmlFor="name" className="text-black dark:text-white">
                   Username
                 </Label>
                 <Input
@@ -379,7 +379,7 @@ const AuthModal = ({
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="email" className="text-black">
+                <Label htmlFor="email" className="text-black dark:text-white">
                   Email
                 </Label>
                 <Input
@@ -393,7 +393,7 @@ const AuthModal = ({
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="password" className="text-black">
+                <Label htmlFor="password" className="text-black dark:text-white">
                   Password
                 </Label>
                 <div className="relative">
@@ -421,7 +421,7 @@ const AuthModal = ({
               </div>
               <Button
                 type="submit"
-                className="w-full bg-black hover:bg-black/90 text-white"
+                className="w-full bg-black hover:bg-black/90 text-white dark:bg-white dark:text-black"
                 disabled={isLoading}
               >
                 {isLoading ? (
@@ -446,7 +446,7 @@ const AuthModal = ({
             </div>
             <form onSubmit={handleForgotPassword} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="reset-email" className="text-black">
+                <Label htmlFor="reset-email" className="text-black dark:text-white">
                   Email
                 </Label>
                 <Input
@@ -461,7 +461,7 @@ const AuthModal = ({
               </div>
               <Button
                 type="submit"
-                className="w-full bg-black hover:bg-black/90 text-white"
+                className="w-full bg-black hover:bg-black/90 text-white dark:bg-white dark:text-black"
                 disabled={isLoading}
               >
                 {isLoading ? (
@@ -479,7 +479,7 @@ const AuthModal = ({
             </div>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="new-password" className="text-black">
+                <Label htmlFor="new-password" className="text-black dark:text-white">
                   New Password
                 </Label>
                 <div className="relative">
@@ -523,7 +523,7 @@ const AuthModal = ({
               </div>
               <Button
                 type="submit"
-                className="w-full bg-black hover:bg-black/90 text-white"
+                className="w-full bg-black hover:bg-black/90 text-white dark:bg-white dark:text-black"
                 disabled={isLoading}
               >
                 {isLoading ? (

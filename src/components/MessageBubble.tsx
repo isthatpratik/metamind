@@ -33,17 +33,17 @@ const MessageBubble = ({
 
   // Determine background color based on sender
   const bubbleClasses = cn(
-    "p-4 max-w-[85%] rounded-lg mb-4",
+    "p-4 max-w-[85%] rounded-lg mb-4 dark:bg-gray-700 dark:border-white dark:border dark:text-white",
     isUser
       ? "bg-black text-white ml-auto"
-      : "bg-white text-black mr-auto border",
+      : "bg-white text-black mr-auto border dark:bg-black/80 dark:border-white dark:text-white",
   );
 
   return (
     <div
       className={`flex flex-col ${isUser ? "items-end" : "items-start"} w-full`}
     >
-      <div className="flex items-center mb-2 text-xs text-black">
+      <div className="flex items-center mb-2 text-xs text-black ">
         {!isUser && (
           <div className="flex items-center justify-center w-5 h-5 mr-1 overflow-hidden">
             <Image

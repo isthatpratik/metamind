@@ -25,8 +25,9 @@ export default function RootLayout({
       <body className={fustat.className}>
         <ThemeProvider
           attribute="class"
-          defaultTheme="dark"
+          defaultTheme="light"
           enableSystem={true}
+          themes={["light", "dark"]}
         >
           {children}
           <Toaster />
