@@ -22,12 +22,11 @@ export const supabase = createClient(
 
 // Helper functions for auth
 export const signUp = async (email: string, password: string, name: string) => {
-  const redirectTo = `${getBaseUrl()}/auth/callback`;
   return supabase.auth.signUp({
     email,
     password,
     options: {
-      emailRedirectTo: redirectTo,
+      emailRedirectTo: 'https://metamind-lake.vercel.app/auth/callback',
       data: {
         name
       }
@@ -60,9 +59,8 @@ export const checkExistingEmail = async (email: string) => {
 };
 
 export const resetPassword = async (email: string) => {
-  const redirectTo = `${getBaseUrl()}/?type=recovery`;
   return supabase.auth.resetPasswordForEmail(email, {
-    redirectTo,
+    redirectTo: 'https://metamind-lake.vercel.app/?type=recovery',
   });
 };
 
@@ -126,11 +124,10 @@ export const getPromptHistory = async (userId: string) => {
 };
 
 export const signInWithGoogle = async () => {
-  const redirectTo = `${getBaseUrl()}/auth/callback`;
   return supabase.auth.signInWithOAuth({
     provider: 'google',
     options: {
-      redirectTo,
+      redirectTo: 'https://metamind-lake.vercel.app/auth/callback',
     },
   });
 }; 
