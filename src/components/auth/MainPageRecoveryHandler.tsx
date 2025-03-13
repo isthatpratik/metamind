@@ -15,22 +15,16 @@ export default function MainPageRecoveryHandler({
   const searchParams = useSearchParams();
 
   useEffect(() => {
-    // Only run this effect once on mount
-    const type = searchParams?.get('type');
+    const type = searchParams.get('type');
     if (type === 'recovery') {
-      // Delay setting the active tab slightly to ensure modal is ready
-      setTimeout(() => {
-        setActiveTab('update-password');
-        setAuthModalOpen(true);
-      }, 100);
-
-      // Clean up URL
-      if (typeof window !== 'undefined') {
-        const newUrl = window.location.pathname;
-        window.history.replaceState({}, '', newUrl);
-      }
+      setActiveTab('update-password');
+      setAuthModalOpen(true);
+      // Remove the recovery parameter from URL
+      const newUrl = new URL(window.location.href);
+      newUrl.searchParams.delete('type');
+      window.history.replaceState({}, '', newUrl.toString());
     }
-  }, []); // Empty dependency array to run only once
+  }, [searchParams, setActiveTab, setAuthModalOpen]);
 
   return null;
 } 

@@ -232,7 +232,7 @@ const AuthModal = ({
 
         toast.success("Welcome back!", {
           description: "Successfully logged in",
-          descriptionClassName: "text-gray-500"
+          descriptionClassName: "text-black/80"
         });
         onLogin({
           id: signInData.user.id,
@@ -274,10 +274,10 @@ const AuthModal = ({
           onValueChange={(v) => setActiveTab(v as TabType)}
         >
           {activeTab !== "update-password" && (
-            <TabsList className="grid w-full grid-cols-2 bg-[#f5f5f5]">
-              <TabsTrigger value="login">Login</TabsTrigger>
-              <TabsTrigger value="register">Register</TabsTrigger>
-            </TabsList>
+          <TabsList className="grid w-full grid-cols-2 bg-[#f5f5f5]">
+            <TabsTrigger value="login">Login</TabsTrigger>
+            <TabsTrigger value="register">Register</TabsTrigger>
+          </TabsList>
           )}
 
           <TabsContent value="login">
@@ -298,9 +298,9 @@ const AuthModal = ({
               </div>
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
-                  <Label htmlFor="password" className="text-black">
-                    Password
-                  </Label>
+                <Label htmlFor="password" className="text-black">
+                  Password
+                </Label>
                   <button
                     type="button"
                     onClick={() => setActiveTab("forgot-password")}
@@ -310,13 +310,13 @@ const AuthModal = ({
                   </button>
                 </div>
                 <div className="relative">
-                  <Input
-                    id="password"
+                <Input
+                  id="password"
                     type={showPassword ? "text" : "password"}
-                    placeholder="••••••••"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
                     className="bg-white border-[#eaeaea] text-black pr-10"
                   />
                   <button
@@ -397,13 +397,13 @@ const AuthModal = ({
                   Password
                 </Label>
                 <div className="relative">
-                  <Input
-                    id="password"
+                <Input
+                  id="password"
                     type={showPassword ? "text" : "password"}
-                    placeholder="••••••••"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
                     className="bg-white border-[#eaeaea] text-black pr-10"
                   />
                   <button

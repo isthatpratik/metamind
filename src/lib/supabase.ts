@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { getBaseUrl } from './utils';
 
 if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
   throw new Error('Missing env.NEXT_PUBLIC_SUPABASE_URL');
@@ -14,24 +15,24 @@ export const supabase = createClient(
     auth: {
       autoRefreshToken: true,
       persistSession: true,
-      detectSessionInUrl: true
-    }
+      detectSessionInUrl: true,
+    },
   }
 );
 
 // Helper functions for auth
 export const signUp = async (email: string, password: string, name: string) => {
-  const { data, error } = await supabase.auth.signUp({
+  const redirectTo = `${getBaseUrl()}/auth/callback`;
+  return supabase.auth.signUp({
     email,
     password,
     options: {
+      emailRedirectTo: redirectTo,
       data: {
-        name,
-      },
-      emailRedirectTo: `${window.location.origin}/auth/callback`,
+        name
+      }
     },
   });
-  return { data, error };
 };
 
 export const signIn = async (email: string, password: string) => {
@@ -59,10 +60,10 @@ export const checkExistingEmail = async (email: string) => {
 };
 
 export const resetPassword = async (email: string) => {
-  const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${window.location.origin}/auth/callback?type=recovery`,
+  const redirectTo = `${getBaseUrl()}/?type=recovery`;
+  return supabase.auth.resetPasswordForEmail(email, {
+    redirectTo,
   });
-  return { data, error };
 };
 
 export const updatePassword = async (newPassword: string) => {
@@ -122,4 +123,14 @@ export const getPromptHistory = async (userId: string) => {
     .eq('user_id', userId)
     .order('created_at', { ascending: false });
   return { data, error };
+};
+
+export const signInWithGoogle = async () => {
+  const redirectTo = `${getBaseUrl()}/auth/callback`;
+  return supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: {
+      redirectTo,
+    },
+  });
 }; 

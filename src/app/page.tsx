@@ -45,17 +45,11 @@ export default function Home() {
     };
   }, []);
 
-  // Check for authenticated user and get profile on mount
+  // Listen for auth state changes
   useEffect(() => {
-    const checkUser = async () => {
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      
-      if (sessionError) {
-        console.error("Error getting session:", sessionError);
-        return;
-      }
-
-      if (session?.user) {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_IN' && session?.user) {
+        // Get user profile and prompt history
         const { data: profile, error: profileError } = await getProfile(session.user.id);
         
         if (profileError) {
@@ -69,7 +63,7 @@ export default function Home() {
             email: session.user.email || "",
             name: profile.name || session.user.email?.split("@")[0] || "",
           });
-          
+
           // Get prompt history to ensure accurate count
           const { data: promptHistory, error: historyError } = await getPromptHistory(session.user.id);
           
@@ -84,30 +78,6 @@ export default function Home() {
             setPromptCount(actualCount);
           }
         }
-      }
-    };
-
-    checkUser();
-  }, []);
-
-  // Listen for auth state changes
-  useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === 'SIGNED_IN' && session?.user) {
-        const { data: profile } = await getProfile(session.user.id);
-        const { data: promptHistory } = await getPromptHistory(session.user.id);
-        
-        setUser({
-          id: session.user.id,
-          email: session.user.email || "",
-          name: profile?.name || session.user.email?.split("@")[0] || "",
-        });
-
-        const actualCount = Math.max(
-          profile?.prompt_count || 0,
-          promptHistory?.length || 0
-        );
-        setPromptCount(actualCount);
       } else if (event === 'SIGNED_OUT') {
         setUser(null);
         setPromptCount(0);
@@ -120,33 +90,25 @@ export default function Home() {
   }, []);
 
   const handleLogin = async (userData: { email: string; name: string; id: string; promptCount: number }) => {
-    try {
-      setUser({
-        id: userData.id,
-        email: userData.email,
-        name: userData.name,
-      });
-      
-      // Get fresh prompt count after login
-      const { data: profile } = await getProfile(userData.id);
-      const { data: promptHistory } = await getPromptHistory(userData.id);
-      
-      // Use the most accurate count available
-      const actualCount = Math.max(
-        profile?.prompt_count || 0,
-        promptHistory?.length || 0,
-        userData.promptCount
-      );
-      
-      setPromptCount(actualCount);
-      setAuthModalOpen(false);
-    } catch (error) {
-      console.error("Error in handleLogin:", error);
-      toast.error("Error updating user data", {
-        description: "Please try logging in again",
-        descriptionClassName: "text-gray-500"
-      });
-    }
+    setUser({
+      id: userData.id,
+      email: userData.email,
+      name: userData.name,
+    });
+    
+    // Get fresh prompt count after login
+    const { data: profile } = await getProfile(userData.id);
+    const { data: promptHistory } = await getPromptHistory(userData.id);
+    
+    // Use the most accurate count available
+    const actualCount = Math.max(
+      profile?.prompt_count || 0,
+      promptHistory?.length || 0,
+      userData.promptCount
+    );
+    
+    setPromptCount(actualCount);
+    setAuthModalOpen(false);
   };
 
   const handleLogout = async () => {
@@ -379,7 +341,8 @@ export default function Home() {
         <AuthModal
           isOpen={authModalOpen}
           onClose={() => {
-            if (activeTab === 'update-password' && typeof window !== 'undefined' && window.location.search.includes('type=recovery')) {
+            // Prevent closing modal during password update
+            if (activeTab === 'update-password' && window.location.search.includes('type=recovery')) {
               return;
             }
             setAuthModalOpen(false);
