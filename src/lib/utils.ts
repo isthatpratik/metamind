@@ -6,13 +6,9 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export function getBaseUrl() {
-  if (typeof window !== 'undefined') {
-    // Client-side
-    return window.location.origin;
-  }
-  // Server-side
+  // Always use production URL for email links
   if (process.env.NEXT_PUBLIC_SITE_URL) {
     return process.env.NEXT_PUBLIC_SITE_URL;
   }
-  return process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000';
+  return 'https://metamind-lake.vercel.app';
 }
