@@ -247,9 +247,9 @@ export default function Home() {
             <Link href="/" className="flex items-center gap-2 w-25 h-auto">
               <Image
                 src={
-                  theme === "dark"
-                    ? "/images/metamind-dark.png"
-                    : "/images/metamind-light.png"
+                  theme === "light"
+                    ? "/images/metamind-light.png"
+                    : "/images/metamind-dark.png"
                 }
                 alt="MetaMind Logo"
                 width={200}

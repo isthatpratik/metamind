@@ -38,7 +38,7 @@ const ChatInterface = ({
       id: "1",
       message: "Hello! How can I help you with AI tool instructions today?",
       isUser: false,
-      timestamp: new Date().toLocaleTimeString(),
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       toolType: "Tempo",
     },
   ],

@@ -26,12 +26,13 @@ serve(async (req) => {
     // Get the authorization header
     const authHeader = req.headers.get('Authorization')
     if (!authHeader) {
+      console.error('No authorization header provided');
       throw new Error('No authorization header')
     }
 
     // Create Supabase client
     const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('NEXT_PUBLIC_SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
       {
         auth: {
@@ -46,14 +47,24 @@ serve(async (req) => {
       authHeader.replace('Bearer ', '')
     )
 
-    if (userError || !user) {
-      throw new Error(userError?.message || 'User not found')
+    if (userError) {
+      console.error('Error getting user:', userError);
+      throw new Error(`User error: ${userError.message}`)
+    }
+
+    if (!user) {
+      console.error('No user found');
+      throw new Error('User not found')
     }
 
     // Get the request body
-    const { amount, currency = 'usd' } = await req.json()
+    const body = await req.json()
+    console.log('Request body:', body);
+
+    const { amount, currency = 'usd' } = body
 
     if (!amount || typeof amount !== 'number') {
+      console.error('Invalid amount:', amount);
       throw new Error('Invalid amount provided')
     }
 
@@ -84,10 +95,13 @@ serve(async (req) => {
     )
   } catch (error) {
     console.error('Error creating payment intent:', error)
+    const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+    const errorDetails = error instanceof Error ? error.stack : undefined;
+    
     return new Response(
       JSON.stringify({
-        error: error.message,
-        details: error.stack,
+        error: errorMessage,
+        details: errorDetails,
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

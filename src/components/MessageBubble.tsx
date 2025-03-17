@@ -35,7 +35,7 @@ const MessageBubble = ({
   const bubbleClasses = cn(
     "p-4 max-w-[85%] rounded-lg mb-4 dark:bg-gray-700 dark:border-white dark:border dark:text-white",
     isUser
-      ? "bg-black text-white ml-auto"
+      ? "bg-black text-white dark ml-auto"
       : "bg-white text-black mr-auto border dark:bg-black/80 dark:border-white dark:text-white",
   );
 
@@ -43,11 +43,11 @@ const MessageBubble = ({
     <div
       className={`flex flex-col ${isUser ? "items-end" : "items-start"} w-full`}
     >
-      <div className="flex items-center mb-2 text-xs text-black ">
+      <div className="flex items-center mb-2 text-xs text-black dark:text-white">
         {!isUser && (
           <div className="flex items-center justify-center w-5 h-5 mr-1 overflow-hidden">
             <Image
-              src="/images/logo.svg"
+              src="/images/Metamind.png"
               alt="MetaMind"
               width={20}
               height={20}

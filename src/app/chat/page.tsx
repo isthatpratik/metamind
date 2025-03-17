@@ -124,7 +124,7 @@ export default function ChatPage() {
           id: "1",
           message: `Welcome ${user.name}! Describe your product idea and I'll generate a customized prompt for ${selectedTool}.`,
           isUser: false,
-          timestamp: new Date().toLocaleTimeString(),
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
           toolType: selectedTool,
         },
       ]);
@@ -148,7 +148,7 @@ export default function ChatPage() {
       id: Date.now().toString(),
       message,
       isUser: true,
-      timestamp: new Date().toLocaleTimeString(),
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       toolType: selectedTool,
     };
 
@@ -164,7 +164,7 @@ export default function ChatPage() {
         id: (Date.now() + 1).toString(),
         message: response,
         isUser: false,
-        timestamp: new Date().toLocaleTimeString(),
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         syntaxHighlight: true,
         toolType: selectedTool,
       };

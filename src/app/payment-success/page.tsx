@@ -2,8 +2,9 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { getCurrentUser, handlePaymentSuccess } from '@/lib/supabase';
+import { getCurrentUser } from '@/lib/supabase';
 import { toast } from 'sonner';
+import { supabase } from '@/lib/supabase';
 
 export default function PaymentSuccessPage() {
   const router = useRouter();
@@ -11,21 +12,41 @@ export default function PaymentSuccessPage() {
   useEffect(() => {
     const handleSuccess = async () => {
       try {
-        const { user, error } = await getCurrentUser();
-        if (error || !user) {
+        const { data: { user }, error: userError } = await supabase.auth.getUser();
+        
+        if (userError || !user) {
+          console.error('Auth error:', userError);
           toast.error('Authentication required');
           router.push('/');
           return;
         }
 
-        const { error: paymentError } = await handlePaymentSuccess(user.id);
-        if (paymentError) throw paymentError;
+        // Check if the user's profile has been updated
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('is_premium, total_prompts_limit, prompt_count')
+          .eq('id', user.id)
+          .single();
+
+        if (profileError) {
+          console.error('Profile fetch error:', profileError);
+          throw new Error('Failed to fetch user profile');
+        }
+
+        // If the profile hasn't been updated yet, wait a bit and check again
+        if (!profile?.is_premium) {
+          console.log('Profile not updated yet, waiting...');
+          setTimeout(() => {
+            router.refresh();
+          }, 5000);
+          return;
+        }
 
         toast.success('Payment successful! Your account has been upgraded.');
         router.push('/');
       } catch (error) {
         console.error('Error handling payment success:', error);
-        toast.error('Error processing payment');
+        toast.error('Error processing payment. Please contact support if the issue persists.');
         router.push('/');
       }
     };

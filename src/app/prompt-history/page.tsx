@@ -143,6 +143,8 @@ export default function PromptHistoryPage() {
           id: session.user.id,
           email: session.user.email || "",
           name: profile.name || session.user.email?.split("@")[0] || "",
+          is_premium: profile.is_premium || false,
+          total_prompts_limit: profile.total_prompts_limit || 5,
         });
         setPromptCount(profile.prompt_count || 0);
 
