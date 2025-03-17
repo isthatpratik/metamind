@@ -28,6 +28,8 @@ interface User {
   id: string;
   email: string;
   name: string;
+  is_premium?: boolean;
+  total_prompts_limit?: number;
 }
 
 export default function ChatPage() {
@@ -82,24 +84,28 @@ export default function ChatPage() {
             id: session.user.id,
             email: session.user.email || "",
             name: profile.name || session.user.email?.split("@")[0] || "",
+            is_premium: profile.is_premium || false,
+            total_prompts_limit: profile.total_prompts_limit || 5,
           });
           setPromptCount(profile.prompt_count || 0);
 
-          // Check if prompts should be reset (30 days passed)
-          const lastReset = new Date(profile.last_prompt_reset);
-          const thirtyDaysAgo = new Date();
-          thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+          // Check if prompts should be reset (30 days passed) for free users
+          if (!profile.is_premium) {
+            const lastReset = new Date(profile.last_prompt_reset);
+            const thirtyDaysAgo = new Date();
+            thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-          if (lastReset < thirtyDaysAgo) {
-            // Reset prompt count
-            await supabase
-              .from('profiles')
-              .update({
-                prompt_count: 0,
-                last_prompt_reset: new Date().toISOString(),
-              })
-              .eq('id', session.user.id);
-            setPromptCount(0);
+            if (lastReset < thirtyDaysAgo) {
+              // Reset prompt count
+              await supabase
+                .from('profiles')
+                .update({
+                  prompt_count: 0,
+                  last_prompt_reset: new Date().toISOString(),
+                })
+                .eq('id', session.user.id);
+              setPromptCount(0);
+            }
           }
         }
       } else {
@@ -126,110 +132,76 @@ export default function ChatPage() {
   }, [user, messages.length, selectedTool]);
 
   const handleSendMessage = async (message: string) => {
+    if (!user) {
+      setAuthModalOpen(true);
+      return;
+    }
+
+    // Check if user has reached their prompt limit
+    if (promptCount >= (user.total_prompts_limit || 5)) {
+      setPremiumModalOpen(true);
+      return;
+    }
+
+    // Add user message to chat
+    const userMessage: Message = {
+      id: Date.now().toString(),
+      message,
+      isUser: true,
+      timestamp: new Date().toLocaleTimeString(),
+      toolType: selectedTool,
+    };
+
+    setMessages((prev) => [...prev, userMessage]);
+    setIsLoading(true);
+
     try {
-      // Check if user is logged in
-      if (!user) {
-        setAuthModalOpen(true);
-        return;
-      }
+      // Generate AI response
+      const response = await generateAIResponse(message, selectedTool);
 
-      // Check if user has reached prompt limit
-      if (promptCount >= MAX_FREE_PROMPTS) {
-        setPremiumModalOpen(true);
-        return;
-      }
-
-      setIsLoading(true);
-      setError(null);
-
-      // Add user message to the chat
-      const userMessage: Message = {
-        id: Date.now().toString(),
-        message,
-        isUser: true,
-        timestamp: new Date().toLocaleTimeString(),
-      };
-
-      setMessages((prev) => [...prev, userMessage]);
-
-      // Call OpenAI API with a timeout
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 60000);
-
-      try {
-        const aiResponse = await generateAIResponse(message, selectedTool, controller.signal);
-        clearTimeout(timeoutId);
-
-        // Play sound effect
-        const audio = new Audio("/notification.mp3");
-        audio.play();
-
-        // Add shake animation to chat interface
-        const chatInterface = document.querySelector(".chat-interface");
-        if (chatInterface) {
-          chatInterface.classList.add("animate-shake");
-          setTimeout(() => {
-            chatInterface.classList.remove("animate-shake");
-          }, 500);
-        }
-
-        // Save to prompt history
-        const { error: historyError } = await savePromptHistory(
-          user.id,
-          message,
-          aiResponse,
-          selectedTool
-        );
-
-        if (historyError) {
-          console.error("Error saving prompt history:", historyError);
-        }
-
-        // Update prompt count
-        const { error: updateError } = await supabase
-          .from('profiles')
-          .update({ prompt_count: promptCount + 1 })
-          .eq('id', user.id);
-
-        if (updateError) {
-          console.error("Error updating prompt count:", updateError);
-        } else {
-          setPromptCount(prev => prev + 1);
-        }
-
-        // Add AI response to the chat
-        setTimeout(() => {
-          const aiMessage: Message = {
-            id: (Date.now() + 1).toString(),
-            message: aiResponse,
-            isUser: false,
-            timestamp: new Date().toLocaleTimeString(),
-            syntaxHighlight: true,
-            toolType: selectedTool,
-          };
-
-          setMessages((prev) => [...prev, aiMessage]);
-        }, 1000);
-
-      } catch (err) {
-        clearTimeout(timeoutId);
-        throw err;
-      }
-    } catch (error: any) {
-      const errorMessage: Message = {
+      // Add AI response to chat
+      const aiMessage: Message = {
         id: (Date.now() + 1).toString(),
-        message:
-          error.name === "AbortError"
-            ? "Request timed out. Please try again with a simpler query."
-            : "Sorry, there was an error processing your request. Please try again.",
+        message: response,
         isUser: false,
         timestamp: new Date().toLocaleTimeString(),
+        syntaxHighlight: true,
         toolType: selectedTool,
       };
 
-      setMessages((prev) => [...prev, errorMessage]);
-      setError(error.message || "An unknown error occurred");
-      console.error("Error generating AI response:", error);
+      setMessages((prev) => [...prev, aiMessage]);
+
+      // Save to prompt history
+      await savePromptHistory(user.id, message, response, selectedTool);
+
+      // Update prompt count
+      const newPromptCount = promptCount + 1;
+      setPromptCount(newPromptCount);
+
+      // Update profile with new prompt count
+      await supabase
+        .from('profiles')
+        .update({ prompt_count: newPromptCount })
+        .eq('id', user.id);
+
+      // If user is premium and has used all prompts, revert to free tier
+      if (user.is_premium && newPromptCount >= (user.total_prompts_limit || 150)) {
+        await supabase
+          .from('profiles')
+          .update({
+            is_premium: false,
+            total_prompts_limit: 5,
+            has_prompt_history_access: false,
+          })
+          .eq('id', user.id);
+      }
+    } catch (error) {
+      console.error('Error generating response:', error);
+      toast({
+        title: "Error",
+        description: "Failed to generate response. Please try again.",
+        variant: "destructive",
+      });
     } finally {
       setIsLoading(false);
     }
@@ -281,11 +253,11 @@ export default function ChatPage() {
               <div className="flex items-center gap-4">
               <ThemeSwitcher />
 
-                {user && (
-                  <span className="text-sm font-medium px-4 py-2 bg-white/80 dark:bg-transparent backdrop-blur-sm border border-[#eaeaea] rounded-lg">
-                    {promptCount} of {MAX_FREE_PROMPTS} Free Prompts
-                  </span>
-                )}
+              {user && (
+                <span className="text-sm font-medium px-4 py-2 bg-white/80 dark:bg-transparent backdrop-blur-sm border border-[#eaeaea] rounded-lg">
+                  {promptCount} of {user.total_prompts_limit} {user.is_premium ? 'Premium' : 'Free'} Prompts
+                </span>
+              )}
 
                 {user && (
                   <div className="flex items-center gap-2">

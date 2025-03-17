@@ -35,6 +35,8 @@ interface User {
   id: string;
   email: string;
   name: string;
+  is_premium?: boolean;
+  total_prompts_limit?: number;
 }
 
 const TOOL_LOGOS = {
@@ -126,6 +128,17 @@ export default function PromptHistoryPage() {
       }
 
       if (profile) {
+        // Check if user has access to prompt history
+        if (!profile.has_prompt_history_access) {
+          toast({
+            title: "Premium feature",
+            description: "Please upgrade to access prompt history",
+            variant: "destructive",
+          });
+          router.push("/");
+          return;
+        }
+
         setUser({
           id: session.user.id,
           email: session.user.email || "",
@@ -248,10 +261,10 @@ export default function PromptHistoryPage() {
               <ThemeSwitcher />
 
               {user && (
-                  <span className="text-sm font-medium px-4 py-2 bg-white/80 dark:bg-transparent backdrop-blur-sm border border-[#eaeaea] rounded-lg">
-                    {promptCount} of {MAX_FREE_PROMPTS} Free Prompts
-                  </span>
-                )}
+                <span className="text-sm font-medium px-4 py-2 bg-white/80 dark:bg-transparent backdrop-blur-sm border border-[#eaeaea] rounded-lg">
+                  {promptCount} of {user.total_prompts_limit} {user.is_premium ? 'Premium' : 'Free'} Prompts
+                </span>
+              )}
 
               {user && (
                 <div className="flex items-center gap-2">

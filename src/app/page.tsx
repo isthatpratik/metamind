@@ -23,6 +23,8 @@ interface User {
   id: string;
   email: string;
   name: string;
+  is_premium?: boolean;
+  total_prompts_limit?: number;
 }
 
 type TabType = "login" | "register" | "forgot-password" | "update-password";
@@ -62,6 +64,7 @@ export default function Home() {
         data: { session },
         error: sessionError,
       } = await supabase.auth.getSession();
+      
 
       if (sessionError) {
         console.error("Error getting session:", sessionError);
@@ -83,6 +86,8 @@ export default function Home() {
             id: session.user.id,
             email: session.user.email || "",
             name: profile.name || session.user.email?.split("@")[0] || "",
+            is_premium: profile.is_premium || false,
+            total_prompts_limit: profile.total_prompts_limit || 5,
           });
 
           // Get prompt history to ensure accurate count
@@ -119,6 +124,8 @@ export default function Home() {
           id: session.user.id,
           email: session.user.email || "",
           name: profile?.name || session.user.email?.split("@")[0] || "",
+          is_premium: profile?.is_premium || false,
+          total_prompts_limit: profile?.total_prompts_limit || 5,
         });
 
         const actualCount = Math.max(
@@ -255,7 +262,7 @@ export default function Home() {
 
               {user && (
                 <span className="text-sm font-medium px-4 py-2 bg-white/80 dark:bg-transparent backdrop-blur-sm border border-[#eaeaea] rounded-lg">
-                  {promptCount} of {MAX_FREE_PROMPTS} Free Prompts
+                  {promptCount} of {user.total_prompts_limit} {user.is_premium ? 'Premium' : 'Free'} Prompts
                 </span>
               )}
 

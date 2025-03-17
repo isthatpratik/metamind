@@ -122,4 +122,46 @@ export const getPromptHistory = async (userId: string) => {
     .eq('user_id', userId)
     .order('created_at', { ascending: false });
   return { data, error };
+};
+
+// Session management
+export const getSession = async () => {
+  const { data: { session }, error } = await supabase.auth.getSession();
+  return { session, error };
+};
+
+export const getCurrentUser = async () => {
+  const { session, error } = await getSession();
+  if (error || !session?.user) return { user: null, error };
+  
+  const { data: profile, error: profileError } = await getProfile(session.user.id);
+  if (profileError) return { user: null, error: profileError };
+  
+  return {
+    user: {
+      id: session.user.id,
+      email: session.user.email,
+      name: profile?.name || session.user.email?.split("@")[0] || "",
+      prompt_count: profile?.prompt_count || 0,
+      total_prompts_limit: profile?.total_prompts_limit || 5,
+      has_prompt_history_access: profile?.has_prompt_history_access || false,
+      is_premium: profile?.is_premium || false,
+    },
+    error: null
+  };
+};
+
+// Payment related functions
+export const createPaymentIntent = async (userId: string) => {
+  const { data, error } = await supabase.functions.invoke('create-payment-intent', {
+    body: { userId }
+  });
+  return { data, error };
+};
+
+export const handlePaymentSuccess = async (userId: string) => {
+  const { data, error } = await supabase.functions.invoke('handle-payment-success', {
+    body: { userId }
+  });
+  return { data, error };
 }; 
