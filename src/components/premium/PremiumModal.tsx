@@ -24,11 +24,12 @@ interface PremiumModalProps {
   onClose: () => void;
 }
 
-const PaymentForm = ({ onBack }: { onBack: () => void }) => {
+const PaymentForm = ({ onBack, onClose }: { onBack: () => void; onClose: () => void }) => {
   const stripe = useStripe();
   const elements = useElements();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isSuccess, setIsSuccess] = useState(false);
   const { toast } = useToast();
 
   const handlePayment = async () => {
@@ -40,17 +41,27 @@ const PaymentForm = ({ onBack }: { onBack: () => void }) => {
         throw new Error('Stripe has not been initialized');
       }
 
-      console.log('Confirming payment...');
-      const { error: stripeError } = await stripe.confirmPayment({
+      const { error: stripeError, paymentIntent } = await stripe.confirmPayment({
         elements,
-        confirmParams: {
-          return_url: `${window.location.origin}/payment-success`,
-        },
+        redirect: 'if_required',
       });
 
       if (stripeError) {
-        console.error('Stripe payment error:', stripeError);
         throw new Error(stripeError.message);
+      }
+
+      if (paymentIntent.status === 'succeeded') {
+        // Show success state
+        setIsSuccess(true);
+        toast({
+          title: "Success",
+          description: "Your account has been upgraded with 150 additional prompts.",
+        });
+
+        // Close modal after a delay
+        setTimeout(() => {
+          onClose();
+        }, 2000);
       }
     } catch (error: unknown) {
       console.error('Payment error:', error);
@@ -64,6 +75,21 @@ const PaymentForm = ({ onBack }: { onBack: () => void }) => {
       setIsLoading(false);
     }
   };
+
+  if (isSuccess) {
+    return (
+      <div className="space-y-4 text-center">
+        <div className="flex items-center justify-center gap-2 mb-4">
+          <Check className="h-5 w-5 text-green-500" />
+          <h3 className="text-lg font-semibold">Payment Successful!</h3>
+        </div>
+        <p className="text-sm text-gray-500">
+          Your account has been upgraded. You now have access to premium features.
+        </p>
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent mx-auto"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -225,54 +251,10 @@ export function PremiumModal({ isOpen, onClose }: PremiumModalProps) {
       <DialogContent className="sm:max-w-[425px]">
         {showPayment && clientSecret ? (
           <Elements stripe={stripePromise} options={{ clientSecret }}>
-            <PaymentForm onBack={handleBack} />
+            <PaymentForm onBack={handleBack} onClose={onClose} />
           </Elements>
         ) : (
-          <div className="space-y-4">
-            <DialogHeader>
-              <DialogTitle className="text-2xl font-bold text-center flex items-center justify-center gap-2">
-                <span className="text-black font-bold">MetaMind Premium</span>
-              </DialogTitle>
-              <DialogDescription className="text-center">
-                {isPremium 
-                  ? `You currently have ${currentPrompts} of ${totalPrompts} prompts remaining`
-                  : "Get 150 additional prompts and access to prompt history"}
-              </DialogDescription>
-            </DialogHeader>
-
-            <div className="py-4">
-              <div className="space-y-4">
-                <div className="flex items-center gap-2">
-                  <Check className="h-5 w-5 text-green-500" />
-                  <span>150 Additional Prompts</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Check className="h-5 w-5 text-green-500" />
-                  <span>Access to Prompt History</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Check className="h-5 w-5 text-green-500" />
-                  <span>One-time payment of $3.99</span>
-                </div>
-              </div>
-            </div>
-
-            <DialogFooter className="lg:justify-center">
-              <Button
-                variant="outline"
-                onClick={onClose}
-                className="w-full sm:w-auto bg-white rounded-lg text-black hover:bg-[#f5f5f5] hover:text-black border border-[#eaeaea]"
-              >
-                Maybe Later
-              </Button>
-              <Button
-                onClick={handleUpgrade}
-                className="w-full sm:w-auto bg-black hover:bg-black/90 text-white rounded-lg"
-              >
-                {isPremium ? "Buy More Prompts" : "Upgrade Now"}
-              </Button>
-            </DialogFooter>
-          </div>
+          <FeaturesView onUpgrade={handleUpgrade} onClose={onClose} />
         )}
       </DialogContent>
     </Dialog>

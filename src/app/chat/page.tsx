@@ -88,25 +88,6 @@ export default function ChatPage() {
             total_prompts_limit: profile.total_prompts_limit || 5,
           });
           setPromptCount(profile.prompt_count || 0);
-
-          // Check if prompts should be reset (30 days passed) for free users
-          if (!profile.is_premium) {
-            const lastReset = new Date(profile.last_prompt_reset);
-            const thirtyDaysAgo = new Date();
-            thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-
-            if (lastReset < thirtyDaysAgo) {
-              // Reset prompt count
-              await supabase
-                .from('profiles')
-                .update({
-                  prompt_count: 0,
-                  last_prompt_reset: new Date().toISOString(),
-                })
-                .eq('id', session.user.id);
-              setPromptCount(0);
-            }
-          }
         }
       } else {
         setAuthModalOpen(true);

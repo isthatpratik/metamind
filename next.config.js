@@ -2,13 +2,21 @@
 
 const nextConfig = {
   images: {
-    domains: [
-      "images.unsplash.com",
-      "v0.dev",
-      "cursor.sh",
-      "bolt.ai",
-      "tempolabs.ai",
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: '**',
+      },
     ],
+  },
+  webpack: (config, { isServer }) => {
+    if (!isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        punycode: false,
+      };
+    }
+    return config;
   },
 };
 

@@ -1,0 +1,12 @@
+{
+  "compilerOptions": {
+    "lib": ["deno.window", "dom"],
+    "strict": true,
+    "allowJs": true,
+    "esModuleInterop": true,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "types": ["./supabase/functions/deno.d.ts"]
+  },
+  "importMap": "import_map.json"
+} 

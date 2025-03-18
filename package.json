@@ -21,7 +21,6 @@
     "@stripe/stripe-js": "^6.0.0",
     "@supabase/auth-helpers-nextjs": "^0.10.0",
     "@supabase/ssr": "^0.5.2",
-    "@supabase/supabase-js": "^2.49.1",
     "autoprefixer": "10.4.20",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
@@ -46,9 +45,11 @@
     "vaul": "^1.1.2"
   },
   "devDependencies": {
-    "@types/node": "^20",
-    "@types/react": "^18",
-    "@types/react-dom": "^18",
+    "@supabase/supabase-js": "^2.49.1",
+    "@types/deno": "^2.2.0",
+    "@types/node": "^20.17.24",
+    "@types/react": "^18.3.18",
+    "@types/react-dom": "^18.3.5",
     "postcss": "^8",
     "tailwind-merge": "^2.6.0",
     "tailwindcss": "^3",
