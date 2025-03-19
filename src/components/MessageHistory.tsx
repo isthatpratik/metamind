@@ -111,7 +111,7 @@ const MessageHistory = ({
                   transition={{ duration: 0.5 }}
                 />
               </div>
-              <p className="text-sm text-black font-medium">
+              <p className="text-sm text-black font-medium dark:text-white">
                 Generating response... {Math.round(progress)}%
               </p>
             </div>

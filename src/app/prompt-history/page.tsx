@@ -261,14 +261,14 @@ export default function PromptHistoryPage() {
           <div className="w-full flex justify-between items-center py-6">
             <Link href="/" className="flex items-center gap-2 w-25 h-auto">
               <Image
-                src={resolvedTheme === "dark" ? "/images/metamind-dark.png" : "/images/metamind-light.png"}
+                src={resolvedTheme === "light" ? "/images/metamind-light.png" : "/images/metamind-dark.png"}
                 alt="MetaMind Logo"
                 width={200}
                 height={200}
                 className="object-contain lg:w-[180px] w-[120px]"
               />
             </Link>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
               <ThemeSwitcher />
 
               {user && (
@@ -283,7 +283,7 @@ export default function PromptHistoryPage() {
                       onClick={() => setPremiumModalOpen(true)}
                       className="px-4 py-2 bg-gradient-to-tr from-[#A07CFE] from-30% via-[#FE8FB5] via-60% to-[#FFBE7B] to-90% text-white text-sm font-medium rounded-lg hover:opacity-90 transition-opacity"
                     >
-                      Upgrade
+                      {user.is_premium ? "Buy Prompts" : "Upgrade"}
                     </button>
                   <div className="relative" ref={menuRef}>
                     <button

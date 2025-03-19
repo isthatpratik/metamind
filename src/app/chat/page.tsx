@@ -246,12 +246,12 @@ export default function ChatPage() {
     <Suspense fallback={<div>Loading...</div>}>
       <SearchParamsClient setSelectedTool={setSelectedTool} />
       <main className="flex min-h-screen flex-col items-center justify-start bg-white dark:bg-black dark:text-white text-black">
-        <div className="w-full bg-white/80 dark:bg-black z-50">
+        <div className="w-full bg-white/80 dark:bg-black/80 z-50">
           <div className="w-full max-w-7xl mx-auto px-4">
-            <div className="w-full flex justify-between items-center py-6">
+            <div className="w-full flex justify-between items-center py-4">
               <Link href="/" className="flex items-center gap-2 w-25 h-auto">
                 <Image
-                  src={resolvedTheme === "dark" ? "/images/metamind-dark.png" : "/images/metamind-light.png"}
+                  src={resolvedTheme === "light" ? "/images/metamind-light.png" : "/images/metamind-dark.png"}
                   alt="MetaMind Logo"
                   width={200}
                   height={200}
@@ -279,7 +279,7 @@ export default function ChatPage() {
                       onClick={() => setPremiumModalOpen(true)}
                       className="px-4 py-2 bg-gradient-to-tr from-[#A07CFE] from-30% via-[#FE8FB5] via-60% to-[#FFBE7B] to-90% text-white text-sm font-medium rounded-lg hover:opacity-90 transition-opacity"
                     >
-                      Upgrade
+                      {user.is_premium ? "Buy Prompts" : "Upgrade"}
                     </button>
                     <div className="relative" ref={menuRef}>
                       <button
@@ -341,7 +341,7 @@ export default function ChatPage() {
           </div>
           <div className="absolute inset-0 z-0 overflow-hidden flex items-center justify-center">
             <FlickeringGrid
-              className="relative z-0 [mask-image:radial-gradient(800px_circle_at_center,white,transparent)] dark:[mask-image:radial-gradient(800px_circle_at_center,white,transparent)]"
+              className="relative z-0 [mask-image:radial-gradient(700px_circle_at_center,white,transparent)] dark:[mask-image:radial-gradient(700px_circle_at_center,white,transparent)]"
               squareSize={5}
               gridGap={6}
               colors={

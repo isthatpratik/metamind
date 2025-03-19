@@ -24,6 +24,10 @@ interface PremiumModalProps {
   onClose: () => void;
 }
 
+interface User {
+  is_premium: boolean;
+}
+
 const PaymentForm = ({ onBack, onClose }: { onBack: () => void; onClose: () => void }) => {
   const stripe = useStripe();
   const elements = useElements();
@@ -31,6 +35,7 @@ const PaymentForm = ({ onBack, onClose }: { onBack: () => void; onClose: () => v
   const [error, setError] = useState<string | null>(null);
   const [isSuccess, setIsSuccess] = useState(false);
   const { toast } = useToast();
+  const [user, setUser] = useState<User | null>(null);
 
   const handlePayment = async () => {
     try {
@@ -119,7 +124,7 @@ const PaymentForm = ({ onBack, onClose }: { onBack: () => void; onClose: () => v
   );
 };
 
-const FeaturesView = ({ onUpgrade, onClose }: { onUpgrade: () => void; onClose: () => void }) => {
+const FeaturesView = ({ onUpgrade, onClose, isPremium }: { onUpgrade: () => void; onClose: () => void; isPremium: boolean }) => {
   return (
     <>
       <DialogHeader>
@@ -160,7 +165,7 @@ const FeaturesView = ({ onUpgrade, onClose }: { onUpgrade: () => void; onClose: 
           onClick={onUpgrade}
           className="w-full sm:w-auto bg-black hover:bg-black/90 text-white rounded-lg"
         >
-          Upgrade Now
+          {isPremium ? "Buy Prompts" : "Upgrade Now"}
         </Button>
       </DialogFooter>
     </>
@@ -254,7 +259,7 @@ export function PremiumModal({ isOpen, onClose }: PremiumModalProps) {
             <PaymentForm onBack={handleBack} onClose={onClose} />
           </Elements>
         ) : (
-          <FeaturesView onUpgrade={handleUpgrade} onClose={onClose} />
+          <FeaturesView onUpgrade={handleUpgrade} onClose={onClose} isPremium={isPremium} />
         )}
       </DialogContent>
     </Dialog>
