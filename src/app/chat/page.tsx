@@ -19,6 +19,7 @@ import {
 import { useToast } from "@/components/ui/use-toast";
 import { useTheme } from "next-themes";
 import { ThemeSwitcher } from "@/components/theme-switcher";
+import { useUser } from "@/contexts/UserContext";
 
 interface Message {
   id: string;
@@ -45,15 +46,14 @@ export default function ChatPage() {
   const menuRef = useRef<HTMLDivElement>(null);
   const [error, setError] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
-  const [user, setUser] = useState<User | null>(null);
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [premiumModalOpen, setPremiumModalOpen] = useState(false);
-  const [promptCount, setPromptCount] = useState(0);
   const [selectedTool, setSelectedTool] = useState<
     "V0" | "Cursor" | "Bolt" | "Tempo"
   >("Tempo");
   const MAX_FREE_PROMPTS = 5;
   const { theme, resolvedTheme, setTheme } = useTheme();
+  const { user, promptCount, setPromptCount } = useUser();
 
   // Set initial theme to dark immediately
   useEffect(() => {
@@ -82,47 +82,6 @@ export default function ChatPage() {
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, []);
-
-  // Check for authenticated user and get profile
-  useEffect(() => {
-    const checkUser = async () => {
-      const {
-        data: { session },
-        error: sessionError,
-      } = await supabase.auth.getSession();
-
-      if (sessionError) {
-        console.error("Error getting session:", sessionError);
-        return;
-      }
-
-      if (session?.user) {
-        const { data: profile, error: profileError } = await getProfile(
-          session.user.id
-        );
-
-        if (profileError) {
-          console.error("Error getting profile:", profileError);
-          return;
-        }
-
-        if (profile) {
-          setUser({
-            id: session.user.id,
-            email: session.user.email || "",
-            name: profile.name || session.user.email?.split("@")[0] || "",
-            is_premium: profile.is_premium || false,
-            total_prompts_limit: profile.total_prompts_limit || 5,
-          });
-          setPromptCount(profile.prompt_count || 0);
-        }
-      } else {
-        setAuthModalOpen(true);
-      }
-    };
-
-    checkUser();
   }, []);
 
   // Show welcome message only when user logs in
@@ -220,7 +179,6 @@ export default function ChatPage() {
   };
 
   const handleLogin = (userData: User) => {
-    setUser(userData);
     setAuthModalOpen(false);
   };
 
@@ -234,9 +192,7 @@ export default function ChatPage() {
       });
       return;
     }
-    setUser(null);
     setMessages([]);
-    setPromptCount(0);
     router.push("/");
   };
 
@@ -248,7 +204,7 @@ export default function ChatPage() {
       <main className="flex min-h-screen flex-col items-center justify-start bg-white dark:bg-black dark:text-white text-black">
         <div className="w-full bg-white/80 dark:bg-black/80 z-50">
           <div className="w-full max-w-7xl mx-auto px-4">
-            <div className="w-full flex justify-between items-center py-4">
+            <div className="w-full flex justify-between items-center py-6">
               <Link href="/" className="flex items-center gap-2 w-25 h-auto">
                 <Image
                   src={resolvedTheme === "light" ? "/images/metamind-light.png" : "/images/metamind-dark.png"}
@@ -363,7 +319,7 @@ export default function ChatPage() {
             />
           </div>
         </div>
-        <footer className="text-center text-xs text-gray-500 py-6">
+        <footer className="text-center bg-transparent text-xs text-gray-500 py-6">
           <p>
             © {currentYear} MetaMind - Product prompt generator by{" "}
             <Link

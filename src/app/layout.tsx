@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import { Fustat } from "next/font/google";
-import { ThemeProvider } from "@/components/theme-provider";
 import "./globals.css";
-import { Toaster } from "@/components/ui/sonner";
+import { ThemeProvider } from "@/components/theme-provider";
+import { UserProvider } from "@/contexts/UserContext";
 
 const fustat = Fustat({
   subsets: ["latin"],
@@ -10,9 +10,8 @@ const fustat = Fustat({
 });
 
 export const metadata: Metadata = {
-  title: "MetaMind Prompt Generator by Ampersand",
-  description:
-    "Get customized prompts for AI tools like V0, Cursor, Bolt, and Tempo",
+  title: "MetaMind - AI Prompt Generator",
+  description: "Generate powerful AI prompts with intelligent assistance",
 };
 
 export default function RootLayout({
@@ -21,16 +20,17 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning className="dark">
+    <html lang="en" suppressHydrationWarning>
       <body className={fustat.className}>
         <ThemeProvider
           attribute="class"
-          defaultTheme="light"
-          enableSystem={true}
-          themes={["light", "dark"]}
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
         >
-          {children}
-          <Toaster />
+          <UserProvider>
+            {children}
+          </UserProvider>
         </ThemeProvider>
       </body>
     </html>

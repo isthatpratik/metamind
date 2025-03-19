@@ -159,6 +159,8 @@ export default function PromptHistoryPage() {
           id: session.user.id,
           email: session.user.email || "",
           name: profile.name || session.user.email?.split("@")[0] || "",
+          is_premium: profile.is_premium || false,
+          total_prompts_limit: profile.total_prompts_limit || 5,
         });
         setPromptCount(profile.prompt_count || 0);
 
@@ -273,7 +275,10 @@ export default function PromptHistoryPage() {
 
               {user && (
                 <span className="hidden sm:inline-block text-sm font-medium px-4 py-2 bg-white/80 dark:bg-transparent backdrop-blur-sm border border-[#eaeaea] rounded-lg">
-                  {promptCount} of {user.total_prompts_limit} {user.is_premium ? 'Premium' : 'Free'} Prompts
+                  {user.is_premium 
+                    ? `${promptCount}/${user.total_prompts_limit} Premium Prompts`
+                    : `${promptCount}/${user.total_prompts_limit} Free Prompts`
+                  }
                 </span>
               )}
 
@@ -406,7 +411,7 @@ export default function PromptHistoryPage() {
                       <p className="text-gray-600">{prompt.message}</p>
                     </div>
                     <div>
-                      <h3 className="font-medium mb-2">AI Response</h3>
+                      <h3 className="font-medium mb-2">Metamind Response</h3>
                       <div className="bg-[#f5f5f5] dark:bg-white/10 dark:border dark:border-white/30 p-4 rounded-lg">
                         <pre className="whitespace-pre-wrap font-mono text-sm">
                           {prompt.ai_response}

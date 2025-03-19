@@ -18,6 +18,7 @@ import {
 import { toast } from "sonner";
 import { ThemeSwitcher } from "@/components/theme-switcher";
 import { useTheme } from "next-themes";
+import { useUser } from "@/contexts/UserContext";
 
 interface User {
   id: string;
@@ -35,15 +36,13 @@ export default function Home() {
   const menuRef = useRef<HTMLDivElement>(null);
   const [premiumModalOpen, setPremiumModalOpen] = useState(false);
   const router = useRouter();
-  const [user, setUser] = useState<User | null>(null);
   const [authModalOpen, setAuthModalOpen] = useState(false);
-  const [promptCount, setPromptCount] = useState(0);
-  const [isLoading, setIsLoading] = useState(true);
   const [selectedTool, setSelectedTool] = useState<
     "V0" | "Cursor" | "Bolt" | "Tempo" | null
   >(null);
   const MAX_FREE_PROMPTS = 5;
   const { theme, resolvedTheme, setTheme } = useTheme();
+  const { user, promptCount, isLoading, setPromptCount } = useUser();
 
   // Set initial theme to dark immediately
   useEffect(() => {
@@ -74,110 +73,32 @@ export default function Home() {
     };
   }, []);
 
-  // Check for authenticated user and get profile on mount
-  useEffect(() => {
-    const checkUser = async () => {
-      try {
-        const {
-          data: { session },
-          error: sessionError,
-        } = await supabase.auth.getSession();
+  const handleToolSelect = async (tool: "V0" | "Cursor" | "Bolt" | "Tempo") => {
+    if (!user) {
+      setAuthModalOpen(true);
+      return;
+    }
 
-        if (sessionError) {
-          console.error("Error getting session:", sessionError);
-          setIsLoading(false);
-          return;
-        }
+    if (promptCount >= MAX_FREE_PROMPTS) {
+      setPremiumModalOpen(true);
+      return;
+    }
 
-        if (session?.user) {
-          // Fetch profile and prompt history in parallel
-          const [profileResult, historyResult] = await Promise.all([
-            getProfile(session.user.id),
-            getPromptHistory(session.user.id)
-          ]);
+    setSelectedTool(tool);
+    router.push(`/chat?tool=${tool}`);
+  };
 
-          if (profileResult.error) {
-            console.error("Error getting profile:", profileResult.error);
-            setIsLoading(false);
-            return;
-          }
-
-          const profile = profileResult.data;
-          const promptHistory = historyResult.data;
-
-          if (profile) {
-            const actualCount = Math.max(
-              profile.prompt_count || 0,
-              promptHistory?.length || 0
-            );
-
-            setUser({
-              id: session.user.id,
-              email: session.user.email || "",
-              name: profile.name || session.user.email?.split("@")[0] || "",
-              is_premium: profile.is_premium || false,
-              total_prompts_limit: profile.total_prompts_limit || 5,
-            });
-
-            setPromptCount(actualCount);
-          }
-        }
-      } catch (error) {
-        console.error("Error in checkUser:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    checkUser();
-  }, []);
-
-  // Listen for auth state changes
-  useEffect(() => {
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === "SIGNED_IN" && session?.user) {
-        setIsLoading(true);
-        try {
-          // Fetch profile and prompt history in parallel
-          const [profileResult, historyResult] = await Promise.all([
-            getProfile(session.user.id),
-            getPromptHistory(session.user.id)
-          ]);
-
-          const profile = profileResult.data;
-          const promptHistory = historyResult.data;
-
-          const actualCount = Math.max(
-            profile?.prompt_count || 0,
-            promptHistory?.length || 0
-          );
-
-          setUser({
-            id: session.user.id,
-            email: session.user.email || "",
-            name: profile?.name || session.user.email?.split("@")[0] || "",
-            is_premium: profile?.is_premium || false,
-            total_prompts_limit: profile?.total_prompts_limit || 5,
-          });
-
-          setPromptCount(actualCount);
-        } catch (error) {
-          console.error("Error in auth state change:", error);
-        } finally {
-          setIsLoading(false);
-        }
-      } else if (event === "SIGNED_OUT") {
-        setUser(null);
-        setPromptCount(0);
-      }
-    });
-
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, []);
+  const handleLogout = async () => {
+    const { error } = await signOut();
+    if (error) {
+      toast.error("Error logging out", {
+        description: error.message,
+        descriptionClassName: "text-gray-500",
+      });
+      return;
+    }
+    router.push("/");
+  };
 
   const handleLogin = async (userData: {
     email: string;
@@ -202,14 +123,6 @@ export default function Home() {
         userData.promptCount
       );
 
-      setUser({
-        id: userData.id,
-        email: userData.email,
-        name: userData.name,
-        is_premium: profile?.is_premium || false,
-        total_prompts_limit: profile?.total_prompts_limit || 5,
-      });
-
       setPromptCount(actualCount);
       setAuthModalOpen(false);
     } catch (error) {
@@ -219,34 +132,6 @@ export default function Home() {
         descriptionClassName: "text-gray-500",
       });
     }
-  };
-
-  const handleLogout = async () => {
-    const { error } = await signOut();
-    if (error) {
-      toast.error("Error logging out", {
-        description: error.message,
-        descriptionClassName: "text-gray-500",
-      });
-      return;
-    }
-    setUser(null);
-    setPromptCount(0);
-  };
-
-  const handleToolSelect = async (tool: "V0" | "Cursor" | "Bolt" | "Tempo") => {
-    if (!user) {
-      setAuthModalOpen(true);
-      return;
-    }
-
-    if (promptCount >= MAX_FREE_PROMPTS) {
-      setPremiumModalOpen(true);
-      return;
-    }
-
-    setSelectedTool(tool);
-    router.push(`/chat?tool=${tool}`);
   };
 
   const currentYear = new Date().getFullYear();
