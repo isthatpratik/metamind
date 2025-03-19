@@ -2,8 +2,12 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
-    "start": "next start"
+    "build": "NEXT_TELEMETRY_DISABLED=1 next build",
+    "start": "next start",
+    "lint": "next lint --fix",
+    "type-check": "tsc --noEmit",
+    "type-check:deno": "tsc --noEmit --project tsconfig.deno.json",
+    "type-check:all": "npm run type-check && npm run type-check:deno"
   },
   "dependencies": {
     "@radix-ui/react-accordion": "^1.2.3",
@@ -50,6 +54,8 @@
     "@types/node": "^20.17.24",
     "@types/react": "^18.3.18",
     "@types/react-dom": "^18.3.5",
+    "@typescript-eslint/eslint-plugin": "^7.0.0",
+    "@typescript-eslint/parser": "^7.0.0",
     "postcss": "^8",
     "tailwind-merge": "^2.6.0",
     "tailwindcss": "^3",

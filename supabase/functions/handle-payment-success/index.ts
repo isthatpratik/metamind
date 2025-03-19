@@ -54,11 +54,16 @@ serve(async (req: Request) => {
   }
 
   try {
+    // Validate environment variables
+    const supabaseUrl = Deno.env.get('NEXT_PUBLIC_SUPABASE_URL')
+    const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+
+    if (!supabaseUrl || !serviceRoleKey) {
+      throw new Error('Missing required environment variables')
+    }
+
     // Create Supabase client with service role key
-    const supabaseClient = createClient(
-      Deno.env.get('NEXT_PUBLIC_SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    )
+    const supabaseClient = createClient(supabaseUrl, serviceRoleKey)
 
     // Parse request body
     const { userId } = await req.json()
@@ -175,11 +180,10 @@ serve(async (req: Request) => {
     )
   } catch (error) {
     console.error('Payment success handler error:', error)
-    const errorWithMessage = toErrorWithMessage(error)
     return new Response(
       JSON.stringify({ 
         success: false,
-        error: errorWithMessage.message 
+        error: error instanceof Error ? error.message : 'An unknown error occurred'
       }),
       { 
         status: 500,
