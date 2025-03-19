@@ -268,11 +268,11 @@ export default function PromptHistoryPage() {
               {user && (
                 <div className="flex items-center gap-2">
                   <button
-                    onClick={() => setPremiumModalOpen(true)}
-                    className="px-4 py-2 bg-gradient-to-r from-pink-600 via-purple-600 to-blue-600 text-white text-sm font-medium rounded-lg hover:opacity-90 transition-opacity"
-                  >
-                    Upgrade
-                  </button>
+                      onClick={() => setPremiumModalOpen(true)}
+                      className="px-4 py-2 bg-gradient-to-tr from-[#A07CFE] from-30% via-[#FE8FB5] via-60% to-[#FFBE7B] to-90% text-white text-sm font-medium rounded-lg hover:opacity-90 transition-opacity"
+                    >
+                      Upgrade
+                    </button>
                   <div className="relative" ref={menuRef}>
                     <button
                       onClick={() => setMenuOpen(!menuOpen)}

@@ -121,7 +121,7 @@ const Header = ({
           <Button
             size="sm"
             onClick={onLogin}
-            className="bg-black hover:bg-black/90 text-white"
+            className="bg-white/70 dark:bg-white/70 text-black hover:bg-white/80"
           >
             Sign In
           </Button>

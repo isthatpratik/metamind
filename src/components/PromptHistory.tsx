@@ -168,7 +168,7 @@ const PromptHistory = ({ prompts = [], onClose }: PromptHistoryProps) => {
                     <Button
                       variant="outline"
                       size="sm"
-                      className="h-8 px-3 text-xs bg-gradient-to-r from-pink-600 via-purple-600 to-blue-600 hover:opacity-90 text-white rounded-lg border-0"
+                      className="h-8 px-3 text-xs bg-gradient-to-r from-[#A07CFE] via-[#FE8FB5] to-[#FFBE7B] hover:opacity-90 text-white rounded-lg border-0"
                       onClick={() => copyToClipboard(prompt.message)}
                     >
                       <Copy className="h-3 w-3 mr-1" />

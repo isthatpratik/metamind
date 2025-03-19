@@ -15,7 +15,6 @@ import {
   getProfile,
   savePromptHistory,
   signOut,
-  getPromptHistory,
 } from "@/lib/supabase";
 import { useToast } from "@/components/ui/use-toast";
 import { useTheme } from "next-themes";
@@ -36,14 +35,12 @@ interface User {
   name: string;
   is_premium?: boolean;
   total_prompts_limit?: number;
-  promptCount?: number;
 }
 
 export default function ChatPage() {
   const router = useRouter();
   const { toast } = useToast();
-  const [isLoading, setIsLoading] = useState(true);
-  const [isGenerating, setIsGenerating] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const [error, setError] = useState<string | null>(null);
@@ -52,7 +49,6 @@ export default function ChatPage() {
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [premiumModalOpen, setPremiumModalOpen] = useState(false);
   const [promptCount, setPromptCount] = useState(0);
-  const [activeTab, setActiveTab] = useState<"login" | "register" | "forgot-password" | "update-password">("login");
   const [selectedTool, setSelectedTool] = useState<
     "V0" | "Cursor" | "Bolt" | "Tempo"
   >("Tempo");
@@ -75,58 +71,38 @@ export default function ChatPage() {
   // Check for authenticated user and get profile
   useEffect(() => {
     const checkUser = async () => {
-      try {
-        const {
-          data: { session },
-          error: sessionError,
-        } = await supabase.auth.getSession();
+      const {
+        data: { session },
+        error: sessionError,
+      } = await supabase.auth.getSession();
 
-        if (sessionError) {
-          console.error("Error getting session:", sessionError);
-          setIsLoading(false);
+      if (sessionError) {
+        console.error("Error getting session:", sessionError);
+        return;
+      }
+
+      if (session?.user) {
+        const { data: profile, error: profileError } = await getProfile(
+          session.user.id
+        );
+
+        if (profileError) {
+          console.error("Error getting profile:", profileError);
           return;
         }
 
-        if (session?.user) {
-          // Fetch profile and prompt history in parallel
-          const [profileResult, historyResult] = await Promise.all([
-            getProfile(session.user.id),
-            getPromptHistory(session.user.id),
-          ]);
-
-          if (profileResult.error) {
-            console.error("Error getting profile:", profileResult.error);
-            setIsLoading(false);
-            return;
-          }
-
-          const profile = profileResult.data;
-          const promptHistory = historyResult.data;
-
-          if (profile) {
-            const actualCount = Math.max(
-              profile.prompt_count || 0,
-              promptHistory?.length || 0
-            );
-
-            setUser({
-              id: session.user.id,
-              email: session.user.email || "",
-              name: profile.name || session.user.email?.split("@")[0] || "",
-              is_premium: profile.is_premium || false,
-              total_prompts_limit: profile.total_prompts_limit || 5,
-              promptCount: actualCount,
-            });
-
-            setPromptCount(actualCount);
-          }
-        } else {
-          setAuthModalOpen(true);
+        if (profile) {
+          setUser({
+            id: session.user.id,
+            email: session.user.email || "",
+            name: profile.name || session.user.email?.split("@")[0] || "",
+            is_premium: profile.is_premium || false,
+            total_prompts_limit: profile.total_prompts_limit || 5,
+          });
+          setPromptCount(profile.prompt_count || 0);
         }
-      } catch (error) {
-        console.error("Error in checkUser:", error);
-      } finally {
-        setIsLoading(false);
+      } else {
+        setAuthModalOpen(true);
       }
     };
 
@@ -170,7 +146,7 @@ export default function ChatPage() {
     };
 
     setMessages((prev) => [...prev, userMessage]);
-    setIsGenerating(true);
+    setIsLoading(true);
 
     try {
       // Generate AI response
@@ -223,51 +199,13 @@ export default function ChatPage() {
         variant: "destructive",
       });
     } finally {
-      setIsGenerating(false);
+      setIsLoading(false);
     }
   };
 
-  const handleLogin = async (userData: User) => {
-    try {
-      // Get fresh profile and prompt history data
-      const { data: profile, error: profileError } = await getProfile(
-        userData.id
-      );
-      const { data: promptHistory, error: historyError } =
-        await getPromptHistory(userData.id);
-
-      if (profileError || historyError) {
-        console.error(
-          "Error fetching user data:",
-          profileError || historyError
-        );
-        return;
-      }
-
-      // Calculate the most accurate prompt count
-      const actualCount = Math.max(
-        profile?.prompt_count || 0,
-        promptHistory?.length || 0,
-        userData.promptCount || 0
-      );
-
-      setUser({
-        ...userData,
-        is_premium: profile?.is_premium || false,
-        total_prompts_limit: profile?.total_prompts_limit || 5,
-        promptCount: actualCount,
-      });
-
-      setPromptCount(actualCount);
-      setAuthModalOpen(false);
-    } catch (error) {
-      console.error("Error in handleLogin:", error);
-      toast({
-        title: "Error",
-        description: "Failed to update user data. Please try logging in again.",
-        variant: "destructive",
-      });
-    }
+  const handleLogin = (userData: User) => {
+    setUser(userData);
+    setAuthModalOpen(false);
   };
 
   const handleLogout = async () => {
@@ -305,10 +243,10 @@ export default function ChatPage() {
                   alt="MetaMind Logo"
                   width={200}
                   height={200}
-                  className="object-contain lg:w-[180px] w-[120px]"
+                  className="object-contain"
                 />
               </Link>
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
                 <ThemeSwitcher />
 
                 {isLoading ? (
@@ -323,87 +261,60 @@ export default function ChatPage() {
                   )
                 )}
 
-                {!isLoading && !user ? (
-                  <div className="flex gap-2">
+                {user && (
+                  <div className="flex items-center gap-2">
                     <button
-                      onClick={() => setAuthModalOpen(true)}
-                      className="px-4 py-2 bg-white border border-[#eaeaea] dark:bg-black text-sm font-medium rounded-lg"
+                      onClick={() => setPremiumModalOpen(true)}
+                      className="px-4 py-2 bg-gradient-to-tr from-[#A07CFE] from-30% via-[#FE8FB5] via-60% to-[#FFBE7B] to-90% text-white text-sm font-medium rounded-lg hover:opacity-90 transition-opacity"
                     >
-                      Sign In
+                      Upgrade
                     </button>
-                    <button
-                      onClick={() => {
-                        setActiveTab("register");
-                        setAuthModalOpen(true);
-                      }}
-                      className="hidden sm:inline-block px-4 py-2 bg-black text-white text-sm font-medium dark:border-white dark:border rounded-lg"
-                    >
-                      Sign Up
-                    </button>
-                  </div>
-                ) : (
-                  !isLoading &&
-                  user && (
-                    <div className="flex items-center gap-2">
+                    <div className="relative" ref={menuRef}>
                       <button
-                        onClick={() => setPremiumModalOpen(true)}
-                        className="hidden sm:inline-block px-4 py-2 bg-gradient-to-br from-pink-600 via-purple-600 to-blue-600 text-white text-sm font-medium rounded-lg"
+                        onClick={() => setMenuOpen(!menuOpen)}
+                        className="p-2 bg-white border border-[#eaeaea] dark:bg-transparent dark:border-white rounded-lg hover:border-black transition-all"
                       >
-                        Upgrade
-                      </button>
-                      <div className="relative" ref={menuRef}>
-                        <button
-                          onClick={() => setMenuOpen(!menuOpen)}
-                          className="p-2 bg-white border border-[#eaeaea] dark:bg-transparent dark:border-white rounded-lg"
+                        <svg
+                          width="20"
+                          height="20"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
                         >
-                          <svg
-                            width="20"
-                            height="20"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          >
-                            <line x1="3" y1="12" x2="21" y2="12"></line>
-                            <line x1="3" y1="6" x2="21" y2="6"></line>
-                            <line x1="3" y1="18" x2="21" y2="18"></line>
-                          </svg>
-                        </button>
-                        {menuOpen && user && (
-                          <div className="absolute right-0 mt-2 w-48 bg-white shadow-lg py-1 z-10 border border-[#eaeaea] rounded-lg">
-                            <div className="px-4 py-2 border-b border-[#eaeaea]">
-                              <p className="text-sm font-medium dark:text-black">
-                                {user.name}
-                              </p>
-                              <p className="text-xs text-gray-500">
-                                {user.email}
-                              </p>
-                            </div>
-                            <button
-                              onClick={() => {
-                                if (user.is_premium) {
-                                  router.push("/prompt-history");
-                                } else {
-                                  setPremiumModalOpen(true);
-                                }
-                              }}
-                              className="block w-full text-left px-4 py-2 text-sm text-black hover:bg-[#f5f5f5] border-b border-[#eaeaea]"
-                            >
-                              Prompt History
-                            </button>
-                            <button
-                              onClick={handleLogout}
-                              className="block w-full text-left px-4 py-2 text-sm text-black hover:bg-[#f5f5f5]"
-                            >
-                              Logout
-                            </button>
+                          <line x1="3" y1="12" x2="21" y2="12"></line>
+                          <line x1="3" y1="6" x2="21" y2="6"></line>
+                          <line x1="3" y1="18" x2="21" y2="18"></line>
+                        </svg>
+                      </button>
+                      {menuOpen && user && (
+                        <div className="absolute right-0 mt-2 w-48 bg-white shadow-lg py-1 z-10 border border-[#eaeaea] rounded-lg">
+                          <div className="px-4 py-2 border-b border-[#eaeaea]">
+                            <p className="text-sm font-medium dark:text-black">
+                              {user.name}
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              {user.email}
+                            </p>
                           </div>
-                        )}
-                      </div>
+                          <Link
+                            href="/prompt-history"
+                            className="block w-full text-left px-4 py-2 text-sm text-black hover:bg-[#f5f5f5] border-b border-[#eaeaea]"
+                          >
+                            Prompt History
+                          </Link>
+                          <button
+                            onClick={handleLogout}
+                            className="block w-full text-left px-4 py-2 text-sm text-black hover:bg-[#f5f5f5]"
+                          >
+                            Logout
+                          </button>
+                        </div>
+                      )}
                     </div>
-                  )
+                  </div>
                 )}
               </div>
             </div>
@@ -412,12 +323,9 @@ export default function ChatPage() {
 
         <div className="flex-1 w-full max-w-5xl flex flex-col justify-center items-center min-h-0 px-4">
           <div className="text-center space-y-2 mb-4 pt-12">
-            <h1 className="text-3xl font-bold tracking-tight text-black">
+            <h1 className="text-3xl font-bold tracking-tight text-black dark:text-white">
               MetaMind Prompt Generator
             </h1>
-            <p className="text-gray-500">
-              Generate customized prompts for your favorite AI tools
-            </p>
           </div>
           <div className="absolute inset-0 z-0 overflow-hidden flex items-center justify-center">
             <FlickeringGrid
@@ -433,13 +341,15 @@ export default function ChatPage() {
               flickerChance={0.1}
             />
           </div>
-          <ChatInterface
-            onSendMessage={handleSendMessage}
-            initialMessages={messages}
-            initialTool={selectedTool}
-            showToolSelector={false}
-            isLoading={isGenerating}
-          />
+          <div className="flex w-full py-4 relative border border-[#eaeaea] dark:border-none dark:bg-black rounded-lg overflow-hidden bg-white/80 backdrop-blur-sm dark:backdrop-blur-none before:absolute before:inset-0 before:-translate-x-full before:animate-[shimmer_2s_infinite] before:bg-gradient-to-r before:from-transparent before:via-white/60 before:to-transparent">
+            <ChatInterface
+              onSendMessage={handleSendMessage}
+              isLoading={isLoading}
+              initialMessages={messages}
+              initialTool={selectedTool}
+              showToolSelector={false}
+            />
+          </div>
         </div>
         <footer className="text-center text-xs text-gray-500 py-6">
           <p>
@@ -456,10 +366,8 @@ export default function ChatPage() {
 
         <AuthModal
           isOpen={authModalOpen}
-          onClose={() => setAuthModalOpen(false)}
+          onClose={() => (user ? setAuthModalOpen(false) : null)}
           onLogin={handleLogin}
-          activeTab={activeTab}
-          setActiveTab={setActiveTab}
         />
 
         <PremiumModal

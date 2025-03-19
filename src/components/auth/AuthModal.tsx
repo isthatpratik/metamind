@@ -370,11 +370,11 @@ const AuthModal = ({
               </div>
               <Button
                 type="submit"
-                className="w-full bg-black hover:bg-black/90 text-white"
+                className="w-full"
                 disabled={isLoading}
               >
                 {isLoading ? (
-                  <div className="h-5 w-5 border-2 border-white border-t-transparent rounded-full animate-spin mx-auto"></div>
+                  <div className="h-5 w-5 border-2 border-black border-t-transparent rounded-full animate-spin mx-auto"></div>
                 ) : (
                   "Login"
                 )}
@@ -443,11 +443,11 @@ const AuthModal = ({
               </div>
               <Button
                 type="submit"
-                className="w-full bg-black hover:bg-black/90 text-white"
+                className="w-full bg-white/70 dark:bg-white/70 text-black hover:bg-white/80"
                 disabled={isLoading}
               >
                 {isLoading ? (
-                  <div className="h-5 w-5 border-2 border-white border-t-transparent rounded-full animate-spin mx-auto"></div>
+                  <div className="h-5 w-5 border-2 border-black border-t-transparent rounded-full animate-spin mx-auto"></div>
                 ) : (
                   "Create Account"
                 )}
@@ -484,11 +484,11 @@ const AuthModal = ({
               </div>
               <Button
                 type="submit"
-                className="w-full bg-black hover:bg-black/90 text-white"
+                className="w-full"
                 disabled={isLoading}
               >
                 {isLoading ? (
-                  <div className="h-5 w-5 border-2 border-white border-t-transparent rounded-full animate-spin mx-auto"></div>
+                  <div className="h-5 w-5 border-2 border-black border-t-transparent rounded-full animate-spin mx-auto"></div>
                 ) : (
                   "Send Reset Link"
                 )}
@@ -548,11 +548,11 @@ const AuthModal = ({
               </div>
               <Button
                 type="submit"
-                className="w-full bg-black hover:bg-black/90 text-white"
+                className="w-full bg-white/70 dark:bg-white/70 text-black hover:bg-white/80"
                 disabled={isLoading}
               >
                 {isLoading ? (
-                  <div className="h-5 w-5 border-2 border-white border-t-transparent rounded-full animate-spin mx-auto"></div>
+                  <div className="h-5 w-5 border-2 border-black border-t-transparent rounded-full animate-spin mx-auto"></div>
                 ) : (
                   "Update Password"
                 )}

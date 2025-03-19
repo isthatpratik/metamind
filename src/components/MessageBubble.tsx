@@ -4,6 +4,7 @@ import { Button } from "./ui/button";
 import { cn } from "../lib/utils";
 import { useToast } from "./ui/use-toast";
 import Image from "next/image";
+import { useTheme } from "next-themes";
 
 interface MessageBubbleProps {
   message: string;
@@ -21,6 +22,7 @@ const MessageBubble = ({
   toolType = "Tempo",
 }: MessageBubbleProps) => {
   const { toast } = useToast();
+  const { theme } = useTheme();
 
   const copyToClipboard = (textToCopy: string = message) => {
     navigator.clipboard.writeText(textToCopy);
@@ -47,7 +49,7 @@ const MessageBubble = ({
         {!isUser && (
           <div className="flex items-center justify-center w-5 h-5 mr-1 overflow-hidden">
             <Image
-              src="/images/logo.svg"
+              src={theme === "dark" ? "/images/metamind-white.png" : "/images/metamind-black.png"}
               alt="MetaMind"
               width={20}
               height={20}
@@ -55,7 +57,7 @@ const MessageBubble = ({
             />
           </div>
         )}
-        <span className="flex items-center">
+        <span className="flex items-center dark:text-white">
           {isUser ? "You" : "MetaMind"} • {timestamp}
         </span>
       </div>
@@ -74,7 +76,7 @@ const MessageBubble = ({
                 <Button
                   variant="outline"
                   size="sm"
-                  className="h-8 px-3 text-xs bg-gradient-to-r from-pink-600 via-purple-600 to-blue-600 hover:opacity-90 text-white rounded-lg border-0"
+                  className="h-8 px-3 text-xs bg-gradient-to-r from-[#A07CFE] via-[#FE8FB5] to-[#FFBE7B] hover:opacity-90 text-white rounded-lg border-0"
                   onClick={() => copyToClipboard()}
                 >
                   <Copy className="h-3 w-3 mr-1" />
