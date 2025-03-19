@@ -41,28 +41,28 @@ const PaymentForm = ({ onBack, onClose }: { onBack: () => void; onClose: () => v
         throw new Error('Stripe has not been initialized');
       }
 
-      const { error: stripeError, paymentIntent } = await stripe.confirmPayment({
+      const { error: stripeError } = await stripe.confirmPayment({
         elements,
-        redirect: 'if_required',
+        confirmParams: {
+          return_url: `${window.location.origin}/payment-success`,
+        },
       });
 
       if (stripeError) {
         throw new Error(stripeError.message);
       }
 
-      if (paymentIntent.status === 'succeeded') {
-        // Show success state
-        setIsSuccess(true);
-        toast({
-          title: "Success",
-          description: "Your account has been upgraded with 150 additional prompts.",
-        });
+      // Show success state
+      setIsSuccess(true);
+      toast({
+        title: "Success",
+        description: "Your account has been upgraded with 150 additional prompts.",
+      });
 
-        // Close modal after a delay
-        setTimeout(() => {
-          onClose();
-        }, 2000);
-      }
+      // Close modal after a delay
+      setTimeout(() => {
+        onClose();
+      }, 2000);
     } catch (error: unknown) {
       console.error('Payment error:', error);
       setError(error instanceof Error ? error.message : 'An unknown error occurred');

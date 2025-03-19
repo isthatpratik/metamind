@@ -56,35 +56,6 @@ export async function POST(req: Request) {
         throw new Error('No user ID found in payment intent metadata');
       }
 
-      // Get current user profile
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('is_premium, total_prompts_limit, prompt_count')
-        .eq('id', userId)
-        .single();
-
-      if (profileError) {
-        console.error('Error fetching user profile:', profileError);
-        throw new Error(`Failed to fetch user profile: ${profileError.message}`);
-      }
-
-      // Update user's profile
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .update({
-          is_premium: true,
-          total_prompts_limit: (profile?.total_prompts_limit || 0) + 150,
-          prompt_count: profile?.prompt_count || 0,
-        })
-        .eq('id', userId);
-
-      if (updateError) {
-        console.error('Error updating user profile:', updateError);
-        throw new Error(`Failed to update user profile: ${updateError.message}`);
-      }
-
-      console.log('User profile updated successfully');
-
       // Record the payment in payments table
       const { error: paymentError } = await supabase
         .from('payments')

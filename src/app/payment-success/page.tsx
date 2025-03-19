@@ -41,7 +41,7 @@ export default function PaymentSuccessPage() {
 
           // Show success message with the new limit
           toast.success('Payment successful!', {
-            description: `Your account has been upgraded with 150 additional prompts. New total: ${data?.newLimit || 'N/A'} prompts.`
+            description: `Your account has been upgraded with 150 additional prompts.`
           });
           
           // Redirect to home after a short delay
