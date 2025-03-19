@@ -34,8 +34,19 @@ const PaymentForm = ({ onBack, onClose }: { onBack: () => void; onClose: () => v
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [isElementsReady, setIsElementsReady] = useState(false);
   const { toast } = useToast();
   const [user, setUser] = useState<User | null>(null);
+
+  useEffect(() => {
+    if (elements) {
+      // Use a small delay to ensure Elements are mounted
+      const timer = setTimeout(() => {
+        setIsElementsReady(true);
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [elements]);
 
   const handlePayment = async () => {
     try {
@@ -109,13 +120,22 @@ const PaymentForm = ({ onBack, onClose }: { onBack: () => void; onClose: () => v
         </Button>
         <h3 className="text-lg font-semibold">Complete Your Purchase</h3>
       </div>
-      <PaymentElement />
+      {!isElementsReady && (
+        <div className="flex items-center justify-center py-8">
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
+        </div>
+      )}
+      {isElementsReady && (
+        <div className="min-h-[200px]">
+          <PaymentElement />
+        </div>
+      )}
       {error && (
         <div className="text-red-500 text-sm">{error}</div>
       )}
       <Button
         onClick={handlePayment}
-        disabled={isLoading || !stripe || !elements}
+        disabled={isLoading || !stripe || !elements || !isElementsReady}
         className="w-full"
       >
         {isLoading ? "Processing..." : "Pay $3.99"}
@@ -251,11 +271,26 @@ export function PremiumModal({ isOpen, onClose }: PremiumModalProps) {
     setClientSecret(null);
   };
 
+  const appearance = {
+    theme: 'stripe' as const,
+    variables: {
+      colorPrimary: '#000000',
+      colorBackground: '#ffffff',
+      colorText: '#000000',
+    },
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[425px] max-h-[90vh] overflow-y-auto">
-        {showPayment ? (
-          <Elements stripe={stripePromise} options={{ clientSecret: clientSecret! }}>
+        {showPayment && clientSecret ? (
+          <Elements 
+            stripe={stripePromise} 
+            options={{ 
+              clientSecret,
+              appearance,
+            }}
+          >
             <PaymentForm onBack={handleBack} onClose={onClose} />
           </Elements>
         ) : (
