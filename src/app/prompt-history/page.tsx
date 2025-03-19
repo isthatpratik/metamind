@@ -244,7 +244,7 @@ export default function PromptHistoryPage() {
         <div className="w-full max-w-7xl mx-auto px-4">
           <div className="w-full flex justify-between items-center py-6">
             <Link href="/" className="flex items-center gap-2 w-25 h-auto">
-              <Image
+            <Image
                 src={
                   theme === "dark"
                     ? "/images/metamind-dark.png"
@@ -253,15 +253,14 @@ export default function PromptHistoryPage() {
                 alt="MetaMind Logo"
                 width={200}
                 height={200}
-                className="object-contain"
+                className="object-contain lg:w-[180px] w-[120px]"
               />
             </Link>
             <div className="flex items-center gap-4">
-
               <ThemeSwitcher />
 
               {user && (
-                <span className="text-sm font-medium px-4 py-2 bg-white/80 dark:bg-transparent backdrop-blur-sm border border-[#eaeaea] rounded-lg">
+                <span className="hidden sm:inline-block text-sm font-medium px-4 py-2 bg-white/80 dark:bg-transparent backdrop-blur-sm border border-[#eaeaea] rounded-lg">
                   {promptCount} of {user.total_prompts_limit} {user.is_premium ? 'Premium' : 'Free'} Prompts
                 </span>
               )}
@@ -277,7 +276,7 @@ export default function PromptHistoryPage() {
                   <div className="relative" ref={menuRef}>
                     <button
                       onClick={() => setMenuOpen(!menuOpen)}
-                      className="p-2 bg-white border border-[#eaeaea] dark:bg-transparent dark:border-white rounded-lg hover:border-black transition-all"
+                      className="p-2 bg-white border border-[#eaeaea] dark:bg-transparent dark:border-white rounded-lg"
                     >
                       <svg
                         width="20"
@@ -295,7 +294,7 @@ export default function PromptHistoryPage() {
                       </svg>
                     </button>
                     {menuOpen && user && (
-                      <div className="absolute right-0 mt-2 w-48 bg-white shadow-lg py-1 z-10 border border-[#eaeaea] rounded-lg">
+                      <div className="absolute right-0 mt-2 w-48 bg-white shadow-lg py-1 z-50 border border-[#eaeaea] rounded-lg">
                         <div className="px-4 py-2 border-b border-[#eaeaea]">
                           <p className="text-sm font-medium dark:text-black">{user.name}</p>
                           <p className="text-xs text-gray-500">{user.email}</p>
@@ -332,7 +331,7 @@ export default function PromptHistoryPage() {
             </p>
             <Link
               href="/"
-              className="mt-4 inline-block px-4 py-2 bg-black text-white rounded-lg hover:bg-black/90"
+              className="mt-4 inline-block px-4 py-2 bg-black text-white dark:text-black dark:bg-whiterounded-lg hover:bg-black/90"
             >
               Generate Prompts
             </Link>

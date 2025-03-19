@@ -137,12 +137,21 @@ export const getCurrentUser = async () => {
   const { data: profile, error: profileError } = await getProfile(session.user.id);
   if (profileError) return { user: null, error: profileError };
   
+  // Get prompt history to ensure accurate count
+  const { data: promptHistory, error: historyError } = await getPromptHistory(session.user.id);
+  
+  // Calculate the most accurate prompt count
+  const actualCount = Math.max(
+    profile?.prompt_count || 0,
+    promptHistory?.length || 0
+  );
+  
   return {
     user: {
       id: session.user.id,
       email: session.user.email,
       name: profile?.name || session.user.email?.split("@")[0] || "",
-      prompt_count: profile?.prompt_count || 0,
+      prompt_count: actualCount,
       total_prompts_limit: profile?.total_prompts_limit || 5,
       has_prompt_history_access: profile?.has_prompt_history_access || false,
       is_premium: profile?.is_premium || false,

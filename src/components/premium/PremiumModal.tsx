@@ -14,7 +14,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { getCurrentUser, createPaymentIntent, handlePaymentSuccess } from "@/lib/supabase";
 import { loadStripe } from "@stripe/stripe-js";
 import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
-import { Check, ArrowLeft } from "lucide-react";
+import { Check, ArrowLeft, CircleCheck } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
@@ -126,33 +126,33 @@ const FeaturesView = ({ onUpgrade, onClose }: { onUpgrade: () => void; onClose: 
         <DialogTitle className="text-2xl font-bold text-center flex items-center justify-center gap-2">
           <span className="text-black font-bold">MetaMind Premium</span>
         </DialogTitle>
-        <DialogDescription className="text-center">
+        <DialogDescription className="text-center text-[black]/60">
           Get 150 additional prompts and access to prompt history
         </DialogDescription>
       </DialogHeader>
 
       <div className="py-4">
-        <div className="space-y-4">
+        <div className="space-y-4 grid items-center justify-center">
           <div className="flex items-center gap-2">
-            <Check className="h-5 w-5 text-green-500" />
+            <CircleCheck className="h-5 w-5 text-green-500" />
             <span>150 Additional Prompts</span>
           </div>
           <div className="flex items-center gap-2">
-            <Check className="h-5 w-5 text-green-500" />
+            <CircleCheck className="h-5 w-5 text-green-500" />
             <span>Access to Prompt History</span>
           </div>
           <div className="flex items-center gap-2">
-            <Check className="h-5 w-5 text-green-500" />
+            <CircleCheck className="h-5 w-5 text-green-500" />
             <span>One-time payment of $3.99</span>
           </div>
         </div>
       </div>
 
-      <DialogFooter className="lg:justify-center">
+      <DialogFooter className="lg:justify-center gap-2">
         <Button
           variant="outline"
           onClick={onClose}
-          className="w-full sm:w-auto bg-white rounded-lg text-black hover:bg-[#f5f5f5] hover:text-black border border-[#eaeaea]"
+          className="w-full sm:w-auto bg-white rounded-lg text-black hover:bg-[#f5f5f5] hover:text-black border border-[#d4d4d4]"
         >
           Maybe Later
         </Button>
@@ -248,9 +248,9 @@ export function PremiumModal({ isOpen, onClose }: PremiumModalProps) {
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[425px]">
-        {showPayment && clientSecret ? (
-          <Elements stripe={stripePromise} options={{ clientSecret }}>
+      <DialogContent className="sm:max-w-[425px] max-h-[90vh] overflow-y-auto">
+        {showPayment ? (
+          <Elements stripe={stripePromise} options={{ clientSecret: clientSecret! }}>
             <PaymentForm onBack={handleBack} onClose={onClose} />
           </Elements>
         ) : (

@@ -16,6 +16,9 @@ import { Check, Eye, EyeOff, ArrowLeft } from "lucide-react";
 import { signIn, signUp, getProfile, resetPassword, updatePassword, checkExistingEmail } from "@/lib/supabase";
 import { toast } from "sonner";
 import RecoveryHandler from "./RecoveryHandler";
+import { z } from "zod";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 
 type TabType = "login" | "register" | "forgot-password" | "update-password";
 
@@ -27,6 +30,35 @@ interface AuthModalProps {
   setActiveTab?: (tab: TabType) => void;
 }
 
+// Validation schemas
+const loginSchema = z.object({
+  email: z.string().email("Please enter a valid email address"),
+  password: z.string().min(8, "Password must be at least 8 characters long"),
+});
+
+const registerSchema = z.object({
+  name: z.string().min(2, "Name must be at least 2 characters long"),
+  email: z.string().email("Please enter a valid email address"),
+  password: z.string().min(8, "Password must be at least 8 characters long"),
+});
+
+const forgotPasswordSchema = z.object({
+  email: z.string().email("Please enter a valid email address"),
+});
+
+const updatePasswordSchema = z.object({
+  password: z.string().min(8, "Password must be at least 8 characters long"),
+  confirmPassword: z.string().min(8, "Password must be at least 8 characters long"),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Passwords don't match",
+  path: ["confirmPassword"],
+});
+
+type LoginFormData = z.infer<typeof loginSchema>;
+type RegisterFormData = z.infer<typeof registerSchema>;
+type ForgotPasswordFormData = z.infer<typeof forgotPasswordSchema>;
+type UpdatePasswordFormData = z.infer<typeof updatePasswordSchema>;
+
 const AuthModal = ({
   isOpen,
   onClose,
@@ -37,26 +69,42 @@ const AuthModal = ({
   const [localActiveTab, setLocalActiveTab] = useState<TabType>("register");
   const activeTab = propActiveTab || localActiveTab;
   const setActiveTab = propSetActiveTab || setLocalActiveTab;
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [name, setName] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+
+  // Form hooks
+  const loginForm = useForm<LoginFormData>({
+    resolver: zodResolver(loginSchema),
+    mode: "onBlur",
+  });
+
+  const registerForm = useForm<RegisterFormData>({
+    resolver: zodResolver(registerSchema),
+    mode: "onBlur",
+  });
+
+  const forgotPasswordForm = useForm<ForgotPasswordFormData>({
+    resolver: zodResolver(forgotPasswordSchema),
+    mode: "onBlur",
+  });
+
+  const updatePasswordForm = useForm<UpdatePasswordFormData>({
+    resolver: zodResolver(updatePasswordSchema),
+    mode: "onBlur",
+  });
 
   // Update isSignUp whenever activeTab changes
   useEffect(() => {
     setIsSignUp(activeTab === "register");
   }, [activeTab]);
 
-  const handleForgotPassword = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleForgotPassword = async (data: ForgotPasswordFormData) => {
     setIsLoading(true);
 
     try {
-      const { error } = await resetPassword(email);
+      const { error } = await resetPassword(data.email);
       
       if (error) {
         toast.error("Failed to send reset email", {
@@ -80,23 +128,15 @@ const AuthModal = ({
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (data: LoginFormData | RegisterFormData | UpdatePasswordFormData) => {
     setIsLoading(true);
 
     try {
       if (activeTab === "register") {
-        if (password.length < 8) {
-          toast.error("Password too short", {
-            description: "Password must be at least 8 characters long",
-            descriptionClassName: "text-gray-500"
-          });
-          setIsLoading(false);
-          return;
-        }
-
+        const registerData = data as RegisterFormData;
+        
         // Check if email already exists
-        const { exists } = await checkExistingEmail(email);
+        const { exists } = await checkExistingEmail(registerData.email);
         if (exists) {
           toast.error("Email already registered", {
             description: "Please try logging in instead",
@@ -106,7 +146,11 @@ const AuthModal = ({
           return;
         }
 
-        const { data: signUpData, error: signUpError } = await signUp(email, password, name);
+        const { data: signUpData, error: signUpError } = await signUp(
+          registerData.email,
+          registerData.password,
+          registerData.name
+        );
         
         if (signUpError) {
           toast.error("Registration failed", {
@@ -121,77 +165,50 @@ const AuthModal = ({
           description: "Please check your email to verify your account",
           descriptionClassName: "text-gray-500"
         });
-        setPassword("");
         setActiveTab("login");
       } else if (activeTab === "update-password") {
-        try {
-          if (password.length < 8) {
-            toast.error("Password too short", {
-              description: "Password must be at least 8 characters long",
-              descriptionClassName: "text-gray-500"
-            });
-            setIsLoading(false);
-            return;
-          }
-
-          if (password !== confirmPassword) {
-            toast.error("Passwords don't match", {
-              description: "Please make sure both passwords are the same",
-              descriptionClassName: "text-gray-500"
-            });
-            setIsLoading(false);
-            return;
-          }
-
-          const { data, error } = await updatePassword(password);
+        const updateData = data as UpdatePasswordFormData;
+        
+        const { data: updateResult, error } = await updatePassword(updateData.password);
+        
+        if (error) {
+          console.error('Password update error:', error);
+          let errorMessage = "Please try again later";
           
-          if (error) {
-            console.error('Password update error:', error);
-            let errorMessage = "Please try again later";
-            
-            if (error.message.includes("Token has expired") || error.message.includes("Invalid token")) {
-              errorMessage = "This reset link has expired or already been used. Please request a new password reset link.";
-              // Switch back to forgot-password tab if link is expired/used
-              setActiveTab("forgot-password");
-            }
-            
-            toast.error("Failed to update password", {
-              description: errorMessage,
-              descriptionClassName: "text-gray-500"
-            });
-            setIsLoading(false);
-            return;
+          if (error.message.includes("Token has expired") || error.message.includes("Invalid token")) {
+            errorMessage = "This reset link has expired or already been used. Please request a new password reset link.";
+            setActiveTab("forgot-password");
           }
-
-          if (!data?.user) {
-            toast.error("Failed to update password", {
-              description: "No user data received",
-              descriptionClassName: "text-gray-500"
-            });
-            setIsLoading(false);
-            return;
-          }
-
-          toast.success("Password updated", {
-            description: "You can now login with your new password",
-            descriptionClassName: "text-gray-500"
-          });
           
-          // Reset form and switch to login tab
-          setPassword("");
-          setConfirmPassword("");
-          setActiveTab("login");
-        } catch (error: any) {
-          console.error('Password update exception:', error);
-          toast.error("An error occurred", {
-            description: error.message || "Please try again later",
+          toast.error("Failed to update password", {
+            description: errorMessage,
             descriptionClassName: "text-gray-500"
           });
           setIsLoading(false);
           return;
         }
+
+        if (!updateResult?.user) {
+          toast.error("Failed to update password", {
+            description: "No user data received",
+            descriptionClassName: "text-gray-500"
+          });
+          setIsLoading(false);
+          return;
+        }
+
+        toast.success("Password updated", {
+          description: "You can now login with your new password",
+          descriptionClassName: "text-gray-500"
+        });
+        
+        setActiveTab("login");
       } else {
-        const { data: signInData, error: signInError } = await signIn(email, password);
+        const loginData = data as LoginFormData;
+        const { data: signInData, error: signInError } = await signIn(
+          loginData.email,
+          loginData.password
+        );
         
         if (signInError) {
           if (signInError.message.includes("Invalid login credentials")) {
@@ -281,7 +298,7 @@ const AuthModal = ({
           )}
 
           <TabsContent value="login">
-            <form onSubmit={handleSubmit} className="space-y-4 pt-4">
+            <form onSubmit={loginForm.handleSubmit(handleSubmit)} className="space-y-4 pt-4">
               <div className="space-y-2">
                 <Label htmlFor="email" className="text-black">
                   Email
@@ -290,11 +307,12 @@ const AuthModal = ({
                   id="email"
                   type="email"
                   placeholder="you@example.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
+                  {...loginForm.register("email")}
                   className="bg-white border-[#eaeaea] text-black"
                 />
+                {loginForm.formState.errors.email && (
+                  <p className="text-sm text-red-500">{loginForm.formState.errors.email.message}</p>
+                )}
               </div>
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
@@ -314,9 +332,7 @@ const AuthModal = ({
                     id="password"
                     type={showPassword ? "text" : "password"}
                     placeholder="••••••••"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
+                    {...loginForm.register("password")}
                     className="bg-white border-[#eaeaea] text-black pr-10"
                   />
                   <button
@@ -331,6 +347,9 @@ const AuthModal = ({
                     )}
                   </button>
                 </div>
+                {loginForm.formState.errors.password && (
+                  <p className="text-sm text-red-500">{loginForm.formState.errors.password.message}</p>
+                )}
               </div>
               <div className="flex items-center space-x-2">
                 <div
@@ -364,36 +383,38 @@ const AuthModal = ({
           </TabsContent>
 
           <TabsContent value="register">
-            <form onSubmit={handleSubmit} className="space-y-4 pt-4">
+            <form onSubmit={registerForm.handleSubmit(handleSubmit)} className="space-y-4 pt-4">
               <div className="space-y-2">
-                <Label htmlFor="name" className="text-black ">
+                <Label htmlFor="name" className="text-black">
                   Username
                 </Label>
                 <Input
                   id="name"
                   placeholder="John Doe"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  required
+                  {...registerForm.register("name")}
                   className="bg-white border-[#eaeaea] text-black"
                 />
+                {registerForm.formState.errors.name && (
+                  <p className="text-sm text-red-500">{registerForm.formState.errors.name.message}</p>
+                )}
               </div>
               <div className="space-y-2">
-                <Label htmlFor="email" className="text-black ">
+                <Label htmlFor="email" className="text-black">
                   Email
                 </Label>
                 <Input
                   id="email"
                   type="email"
                   placeholder="you@example.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
+                  {...registerForm.register("email")}
                   className="bg-white border-[#eaeaea] text-black"
                 />
+                {registerForm.formState.errors.email && (
+                  <p className="text-sm text-red-500">{registerForm.formState.errors.email.message}</p>
+                )}
               </div>
               <div className="space-y-2">
-                <Label htmlFor="password" className="text-black ">
+                <Label htmlFor="password" className="text-black">
                   Password
                 </Label>
                 <div className="relative">
@@ -401,9 +422,7 @@ const AuthModal = ({
                     id="password"
                     type={showPassword ? "text" : "password"}
                     placeholder="••••••••"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
+                    {...registerForm.register("password")}
                     className="bg-white border-[#eaeaea] text-black pr-10"
                   />
                   <button
@@ -418,6 +437,9 @@ const AuthModal = ({
                     )}
                   </button>
                 </div>
+                {registerForm.formState.errors.password && (
+                  <p className="text-sm text-red-500">{registerForm.formState.errors.password.message}</p>
+                )}
               </div>
               <Button
                 type="submit"
@@ -444,20 +466,21 @@ const AuthModal = ({
               </button>
               <h3 className="text-lg font-semibold">Reset Password</h3>
             </div>
-            <form onSubmit={handleForgotPassword} className="space-y-4">
+            <form onSubmit={forgotPasswordForm.handleSubmit(handleForgotPassword)} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="reset-email" className="text-black ">
+                <Label htmlFor="reset-email" className="text-black">
                   Email
                 </Label>
                 <Input
                   id="reset-email"
                   type="email"
                   placeholder="you@example.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
+                  {...forgotPasswordForm.register("email")}
                   className="bg-white border-[#eaeaea] text-black"
                 />
+                {forgotPasswordForm.formState.errors.email && (
+                  <p className="text-sm text-red-500">{forgotPasswordForm.formState.errors.email.message}</p>
+                )}
               </div>
               <Button
                 type="submit"
@@ -477,7 +500,7 @@ const AuthModal = ({
             <div className="flex items-center gap-2 mb-4">
               <h3 className="text-lg font-semibold">Update Password</h3>
             </div>
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={updatePasswordForm.handleSubmit(handleSubmit)} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="new-password" className="text-black">
                   New Password
@@ -487,9 +510,7 @@ const AuthModal = ({
                     id="new-password"
                     type={showPassword ? "text" : "password"}
                     placeholder="••••••••"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
+                    {...updatePasswordForm.register("password")}
                     className="bg-white border-[#eaeaea] text-black pr-10"
                   />
                   <button
@@ -504,6 +525,9 @@ const AuthModal = ({
                     )}
                   </button>
                 </div>
+                {updatePasswordForm.formState.errors.password && (
+                  <p className="text-sm text-red-500">{updatePasswordForm.formState.errors.password.message}</p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="confirm-password" className="text-black">
@@ -514,12 +538,13 @@ const AuthModal = ({
                     id="confirm-password"
                     type={showPassword ? "text" : "password"}
                     placeholder="••••••••"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    required
+                    {...updatePasswordForm.register("confirmPassword")}
                     className="bg-white border-[#eaeaea] text-black pr-10"
                   />
                 </div>
+                {updatePasswordForm.formState.errors.confirmPassword && (
+                  <p className="text-sm text-red-500">{updatePasswordForm.formState.errors.confirmPassword.message}</p>
+                )}
               </div>
               <Button
                 type="submit"

@@ -38,6 +38,7 @@ export default function Home() {
   const [user, setUser] = useState<User | null>(null);
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [promptCount, setPromptCount] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
   const [selectedTool, setSelectedTool] = useState<
     "V0" | "Cursor" | "Bolt" | "Tempo" | null
   >(null);
@@ -60,51 +61,55 @@ export default function Home() {
   // Check for authenticated user and get profile on mount
   useEffect(() => {
     const checkUser = async () => {
-      const {
-        data: { session },
-        error: sessionError,
-      } = await supabase.auth.getSession();
-      
+      try {
+        const {
+          data: { session },
+          error: sessionError,
+        } = await supabase.auth.getSession();
 
-      if (sessionError) {
-        console.error("Error getting session:", sessionError);
-        return;
-      }
-
-      if (session?.user) {
-        const { data: profile, error: profileError } = await getProfile(
-          session.user.id
-        );
-
-        if (profileError) {
-          console.error("Error getting profile:", profileError);
+        if (sessionError) {
+          console.error("Error getting session:", sessionError);
+          setIsLoading(false);
           return;
         }
 
-        if (profile) {
-          setUser({
-            id: session.user.id,
-            email: session.user.email || "",
-            name: profile.name || session.user.email?.split("@")[0] || "",
-            is_premium: profile.is_premium || false,
-            total_prompts_limit: profile.total_prompts_limit || 5,
-          });
+        if (session?.user) {
+          // Fetch profile and prompt history in parallel
+          const [profileResult, historyResult] = await Promise.all([
+            getProfile(session.user.id),
+            getPromptHistory(session.user.id)
+          ]);
 
-          // Get prompt history to ensure accurate count
-          const { data: promptHistory, error: historyError } =
-            await getPromptHistory(session.user.id);
+          if (profileResult.error) {
+            console.error("Error getting profile:", profileResult.error);
+            setIsLoading(false);
+            return;
+          }
 
-          if (historyError) {
-            console.error("Error getting prompt history:", historyError);
-          } else {
-            // Set prompt count based on the most accurate source
+          const profile = profileResult.data;
+          const promptHistory = historyResult.data;
+
+          if (profile) {
             const actualCount = Math.max(
               profile.prompt_count || 0,
               promptHistory?.length || 0
             );
+
+            setUser({
+              id: session.user.id,
+              email: session.user.email || "",
+              name: profile.name || session.user.email?.split("@")[0] || "",
+              is_premium: profile.is_premium || false,
+              total_prompts_limit: profile.total_prompts_limit || 5,
+            });
+
             setPromptCount(actualCount);
           }
         }
+      } catch (error) {
+        console.error("Error in checkUser:", error);
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -117,22 +122,36 @@ export default function Home() {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === "SIGNED_IN" && session?.user) {
-        const { data: profile } = await getProfile(session.user.id);
-        const { data: promptHistory } = await getPromptHistory(session.user.id);
+        setIsLoading(true);
+        try {
+          // Fetch profile and prompt history in parallel
+          const [profileResult, historyResult] = await Promise.all([
+            getProfile(session.user.id),
+            getPromptHistory(session.user.id)
+          ]);
 
-        setUser({
-          id: session.user.id,
-          email: session.user.email || "",
-          name: profile?.name || session.user.email?.split("@")[0] || "",
-          is_premium: profile?.is_premium || false,
-          total_prompts_limit: profile?.total_prompts_limit || 5,
-        });
+          const profile = profileResult.data;
+          const promptHistory = historyResult.data;
 
-        const actualCount = Math.max(
-          profile?.prompt_count || 0,
-          promptHistory?.length || 0
-        );
-        setPromptCount(actualCount);
+          const actualCount = Math.max(
+            profile?.prompt_count || 0,
+            promptHistory?.length || 0
+          );
+
+          setUser({
+            id: session.user.id,
+            email: session.user.email || "",
+            name: profile?.name || session.user.email?.split("@")[0] || "",
+            is_premium: profile?.is_premium || false,
+            total_prompts_limit: profile?.total_prompts_limit || 5,
+          });
+
+          setPromptCount(actualCount);
+        } catch (error) {
+          console.error("Error in auth state change:", error);
+        } finally {
+          setIsLoading(false);
+        }
       } else if (event === "SIGNED_OUT") {
         setUser(null);
         setPromptCount(0);
@@ -151,22 +170,29 @@ export default function Home() {
     promptCount: number;
   }) => {
     try {
-      setUser({
-        id: userData.id,
-        email: userData.email,
-        name: userData.name,
-      });
+      // Get fresh profile and prompt history data
+      const { data: profile, error: profileError } = await getProfile(userData.id);
+      const { data: promptHistory, error: historyError } = await getPromptHistory(userData.id);
 
-      // Get fresh prompt count after login
-      const { data: profile } = await getProfile(userData.id);
-      const { data: promptHistory } = await getPromptHistory(userData.id);
+      if (profileError || historyError) {
+        console.error("Error fetching user data:", profileError || historyError);
+        return;
+      }
 
-      // Use the most accurate count available
+      // Calculate the most accurate prompt count
       const actualCount = Math.max(
         profile?.prompt_count || 0,
         promptHistory?.length || 0,
         userData.promptCount
       );
+
+      setUser({
+        id: userData.id,
+        email: userData.email,
+        name: userData.name,
+        is_premium: profile?.is_premium || false,
+        total_prompts_limit: profile?.total_prompts_limit || 5,
+      });
 
       setPromptCount(actualCount);
       setAuthModalOpen(false);
@@ -254,23 +280,28 @@ export default function Home() {
                 alt="MetaMind Logo"
                 width={200}
                 height={200}
-                className="object-contain"
+                className="object-contain lg:w-[180px] w-[120px]"
               />
             </Link>
             <div className="flex items-center gap-4">
               <ThemeSwitcher />
 
-              {user && (
-                <span className="text-sm font-medium px-4 py-2 bg-white/80 dark:bg-transparent backdrop-blur-sm border border-[#eaeaea] rounded-lg">
-                  {promptCount} of {user.total_prompts_limit} {user.is_premium ? 'Premium' : 'Free'} Prompts
+              {isLoading ? (
+                <div className="h-10 w-32 bg-gray-200 dark:bg-gray-800 animate-pulse rounded-lg" />
+              ) : user && (
+                <span className="hidden sm:inline-block text-sm font-medium px-4 py-2 bg-white/80 dark:bg-transparent backdrop-blur-sm border border-[#eaeaea] rounded-lg">
+                  {user.is_premium 
+                    ? `${promptCount}/${user.total_prompts_limit} Premium Prompts`
+                    : `${promptCount}/${user.total_prompts_limit} Free Prompts`
+                  }
                 </span>
               )}
 
-              {!user ? (
+              {!isLoading && !user ? (
                 <div className="flex gap-2">
                   <button
                     onClick={() => setAuthModalOpen(true)}
-                    className="px-4 py-2 bg-white border border-[#eaeaea] dark:bg-black text-sm font-medium rounded-lg"
+                    className="px-4 py-2 bg-white border border-black/60 dark:bg-black text-sm font-medium rounded-lg"
                   >
                     Sign In
                   </button>
@@ -279,12 +310,12 @@ export default function Home() {
                       setActiveTab("register");
                       setAuthModalOpen(true);
                     }}
-                    className="px-4 py-2 bg-black text-white text-sm font-medium dark:border-white dark:border rounded-lg"
+                    className="hidden sm:inline-block px-4 py-2 bg-black text-white text-sm font-medium dark:border-white dark:border rounded-lg"
                   >
                     Sign Up
                   </button>
                 </div>
-              ) : (
+              ) : !isLoading && user && (
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => setPremiumModalOpen(true)}
@@ -313,17 +344,23 @@ export default function Home() {
                       </svg>
                     </button>
                     {menuOpen && user && (
-                      <div className="absolute right-0 mt-2 w-48 bg-white shadow-lg py-1 z-10 border border-[#eaeaea] rounded-lg">
+                      <div className="absolute right-0 mt-2 w-48 bg-white shadow-lg py-1 z-50 border border-[#eaeaea] rounded-lg">
                         <div className="px-4 py-2 border-b border-[#eaeaea] dark:text-black">
                           <p className="text-sm font-medium">{user.name}</p>
                           <p className="text-xs text-gray-500">{user.email}</p>
                         </div>
-                        <Link
-                          href="/prompt-history"
+                        <button
+                          onClick={() => {
+                            if (user.is_premium) {
+                              router.push('/prompt-history');
+                            } else {
+                              setPremiumModalOpen(true);
+                            }
+                          }}
                           className="block w-full text-left px-4 py-2 text-sm text-black hover:bg-[#f5f5f5] border-b border-[#eaeaea]"
                         >
                           Prompt History
-                        </Link>
+                        </button>
                         <button
                           onClick={handleLogout}
                           className="block w-full text-left px-4 py-2 text-sm text-black hover:bg-[#f5f5f5]"
@@ -365,8 +402,8 @@ export default function Home() {
             </h1>
           </div>
 
-          <div className="w-full max-w-4xl mx-auto flex justify-center">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 max-w-4xl">
+          <div className="w-full max-w-7xl mx-auto flex justify-center">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 max-w-7xl">
               {tools.map((tool) => (
                 <MagicCard
                   key={tool.id}
@@ -378,7 +415,7 @@ export default function Home() {
                     )
                   }
                 >
-                  <div className="p-8 flex flex-col items-center text-center">
+                  <div className="md:p-12 p-8 flex flex-col items-center text-center">
                     <div className="w-16 h-16 bg-white dark:bg-transparent flex items-center justify-center mb-3 overflow-hidden rounded-lg border border-[#eaeaea] dark:border-none">
                       <Image
                         src={`/images/${tool.id.toLowerCase()}.${tool.id === "V0" || tool.id === "Bolt" ? "png" : "jpg"}`}
