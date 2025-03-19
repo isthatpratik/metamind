@@ -53,7 +53,23 @@ export default function ChatPage() {
     "V0" | "Cursor" | "Bolt" | "Tempo"
   >("Tempo");
   const MAX_FREE_PROMPTS = 5;
-  const { theme } = useTheme();
+  const { theme, resolvedTheme, setTheme } = useTheme();
+
+  // Set initial theme to dark immediately
+  useEffect(() => {
+    setTheme('dark');
+    document.documentElement.classList.add('dark');
+  }, []);
+
+  // Handle theme changes
+  useEffect(() => {
+    const root = document.documentElement;
+    if (resolvedTheme === 'dark') {
+      root.classList.add('dark');
+    } else {
+      root.classList.remove('dark');
+    }
+  }, [resolvedTheme]);
 
   // Handle clicks outside the menu to close it
   useEffect(() => {
@@ -235,15 +251,11 @@ export default function ChatPage() {
             <div className="w-full flex justify-between items-center py-6">
               <Link href="/" className="flex items-center gap-2 w-25 h-auto">
                 <Image
-                  src={
-                    theme === "dark"
-                      ? "/images/metamind-dark.png"
-                      : "/images/metamind-light.png"
-                  }
+                  src={resolvedTheme === "dark" ? "/images/metamind-dark.png" : "/images/metamind-light.png"}
                   alt="MetaMind Logo"
                   width={200}
                   height={200}
-                  className="object-contain"
+                  className="object-contain lg:w-[180px] w-[120px]"
                 />
               </Link>
               <div className="flex items-center gap-2">

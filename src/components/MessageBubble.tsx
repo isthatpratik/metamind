@@ -49,7 +49,7 @@ const MessageBubble = ({
         {!isUser && (
           <div className="flex items-center justify-center w-5 h-5 mr-1 overflow-hidden">
             <Image
-              src={theme === "dark" ? "/images/metamind-white.png" : "/images/metamind-black.png"}
+              src={theme === "dark" ? "/images/metamind-dark.png" : "/images/metamind-light.png"}
               alt="MetaMind"
               width={20}
               height={20}

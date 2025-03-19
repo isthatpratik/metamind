@@ -45,14 +45,14 @@ export default function Home() {
   const MAX_FREE_PROMPTS = 5;
   const { theme, resolvedTheme, setTheme } = useTheme();
 
-  // Set initial theme to dark
+  // Set initial theme to dark immediately
   useEffect(() => {
     setTheme('dark');
+    document.documentElement.classList.add('dark');
   }, []);
 
   // Handle theme changes
   useEffect(() => {
-    // Force a re-render when theme changes
     const root = document.documentElement;
     if (resolvedTheme === 'dark') {
       root.classList.add('dark');
@@ -288,7 +288,7 @@ export default function Home() {
           <div className="w-full flex justify-between items-center py-6">
             <Link href="/" className="flex items-center gap-2 w-25 h-auto">
               <Image
-                src="/images/metamind-dark.png"
+                src={resolvedTheme === "dark" ? "/images/metamind-dark.png" : "/images/metamind-light.png"}
                 alt="MetaMind Logo"
                 width={200}
                 height={200}

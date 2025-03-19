@@ -70,19 +70,19 @@ export default function PaymentSuccessPage() {
   }, [router, retryCount]);
 
   return (
-    <div className="flex min-h-screen items-center justify-center">
+    <div className="flex min-h-screen items-center justify-center dark:bg-black">
       <div className="text-center space-y-4">
         {isProcessing ? (
           <>
-            <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent mx-auto"></div>
-            <p className="text-sm text-gray-500">
+            <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent mx-auto dark:border-white"></div>
+            <p className="text-sm text-gray-500 dark:text-white">
               {retryCount > 0 
                 ? `Processing your payment... (Attempt ${retryCount + 1}/${MAX_RETRIES})`
                 : 'Processing your payment...'}
             </p>
           </>
         ) : (
-          <p className="text-sm text-gray-500">Redirecting...</p>
+          <p className="text-sm text-gray-500 dark:text-white">Redirecting...</p>
         )}
       </div>
     </div>
