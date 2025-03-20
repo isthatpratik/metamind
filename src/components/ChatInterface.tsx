@@ -52,6 +52,7 @@ const ChatInterface = ({
     "V0" | "Cursor" | "Bolt" | "Tempo"
   >(initialTool);
   const [error, setError] = useState<string | null>(null);
+  const [localIsLoading, setLocalIsLoading] = useState<boolean>(isLoading);
 
   // Update messages when initialMessages changes
   useEffect(() => {
@@ -62,6 +63,8 @@ const ChatInterface = ({
     (message: string) => {
       // Reset any previous errors
       setError(null);
+      // Set loading state when sending message
+      setLocalIsLoading(true);
       // Call the onSendMessage prop with the message and selected tool
       try {
         if (showToolSelector) {
@@ -72,6 +75,8 @@ const ChatInterface = ({
       } catch (err) {
         setError("Failed to send message. Please try again.");
         console.error("Error sending message:", err);
+        // Reset loading state on error
+        setLocalIsLoading(false);
       }
     },
     [onSendMessage, selectedTool, showToolSelector],
@@ -83,6 +88,13 @@ const ChatInterface = ({
     },
     [],
   );
+
+  // Reset loading state when messages change
+  useEffect(() => {
+    if (messages.length > 0 && messages[messages.length - 1].isUser === false) {
+      setLocalIsLoading(false);
+    }
+  }, [messages]);
 
   return (
     <div className="w-full max-w-4xl mx-auto overflow-hidden rounded-lg flex flex-col h-full bg-white dark:bg-black">
@@ -106,7 +118,7 @@ const ChatInterface = ({
         )}
         <MemoizedMessageHistory
           messages={messages}
-          loading={isLoading}
+          loading={localIsLoading}
           selectedTool={selectedTool}
         />
       </div>
@@ -114,9 +126,9 @@ const ChatInterface = ({
       <div className="p-0">
         <MemoizedMessageInput
           onSendMessage={handleSendMessage}
-          isLoading={isLoading}
+          isLoading={localIsLoading}
           placeholder={`Type your product idea`}
-          disabled={isLoading}
+          disabled={localIsLoading}
         />
       </div>
       <ShineBorder shineColor={["#A07CFE", "#FE8FB5", "#FFBE7B"]} />

@@ -44,10 +44,13 @@ export default function Home() {
   const { theme, resolvedTheme, setTheme } = useTheme();
   const { user, promptCount, isLoading, setPromptCount } = useUser();
 
-  // Set initial theme to dark immediately
+  // Set initial theme to dark only if no theme is set
   useEffect(() => {
-    setTheme('dark');
-    document.documentElement.classList.add('dark');
+    const savedTheme = localStorage.getItem('theme');
+    if (!savedTheme) {
+      setTheme('dark');
+      document.documentElement.classList.add('dark');
+    }
   }, []);
 
   // Handle theme changes
@@ -183,7 +186,7 @@ export default function Home() {
             <div className="flex items-center gap-2">
               <ThemeSwitcher />
 
-              {isLoading ? (
+              {isLoading && !user ? (
                 <div className="h-10 w-32 bg-gray-200 dark:bg-gray-800 animate-pulse rounded-lg" />
               ) : user && (
                 <span className="hidden sm:inline-block text-sm font-medium px-4 py-2 bg-white/80 dark:bg-transparent backdrop-blur-sm border border-[#eaeaea] rounded-lg">

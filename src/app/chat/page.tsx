@@ -55,10 +55,13 @@ export default function ChatPage() {
   const { theme, resolvedTheme, setTheme } = useTheme();
   const { user, promptCount, setPromptCount } = useUser();
 
-  // Set initial theme to dark immediately
+  // Set initial theme to dark only if no theme is set
   useEffect(() => {
-    setTheme('dark');
-    document.documentElement.classList.add('dark');
+    const savedTheme = localStorage.getItem('theme');
+    if (!savedTheme) {
+      setTheme('dark');
+      document.documentElement.classList.add('dark');
+    }
   }, []);
 
   // Handle theme changes
@@ -217,7 +220,7 @@ export default function ChatPage() {
               <div className="flex items-center gap-2">
                 <ThemeSwitcher />
 
-                {isLoading ? (
+                {isLoading && !user ? (
                   <div className="h-10 w-32 bg-gray-200 dark:bg-gray-800 animate-pulse rounded-lg" />
                 ) : (
                   user && (

@@ -87,10 +87,13 @@ export default function PromptHistoryPage() {
   const MAX_FREE_PROMPTS = 5;
   const { theme, resolvedTheme, setTheme } = useTheme();
 
-  // Set initial theme to dark immediately
+  // Set initial theme to dark only if no theme is set
   useEffect(() => {
-    setTheme('dark');
-    document.documentElement.classList.add('dark');
+    const savedTheme = localStorage.getItem('theme');
+    if (!savedTheme) {
+      setTheme('dark');
+      document.documentElement.classList.add('dark');
+    }
   }, []);
 
   // Handle theme changes
@@ -408,7 +411,7 @@ export default function PromptHistoryPage() {
                           )}
                         </div>
                       </div>
-                      <p className="text-gray-600">{prompt.message}</p>
+                      <p className="text-gray-600 dark:text-zinc-400">{prompt.message}</p>
                     </div>
                     <div>
                       <h3 className="font-medium mb-2">Metamind Response</h3>
