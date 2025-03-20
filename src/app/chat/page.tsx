@@ -55,12 +55,14 @@ export default function ChatPage() {
   const { theme, resolvedTheme, setTheme } = useTheme();
   const { user, promptCount, setPromptCount } = useUser();
 
-  // Set initial theme to dark only if no theme is set
+  // Set initial theme based on system preferences
   useEffect(() => {
     const savedTheme = localStorage.getItem('theme');
     if (!savedTheme) {
-      setTheme('dark');
-      document.documentElement.classList.add('dark');
+      // Check system preference
+      const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      setTheme(systemPrefersDark ? 'dark' : 'light');
+      document.documentElement.classList.toggle('dark', systemPrefersDark);
     }
   }, []);
 
@@ -210,7 +212,7 @@ export default function ChatPage() {
             <div className="w-full flex justify-between items-center py-6">
               <Link href="/" className="flex items-center gap-2 w-25 h-auto">
                 <Image
-                  src={resolvedTheme === "light" ? "/images/metamind-light.png" : "/images/metamind-dark.png"}
+                  src={theme === "light" ? "/images/metamind-light.png" : "/images/metamind-dark.png"}
                   alt="MetaMind Logo"
                   width={200}
                   height={200}

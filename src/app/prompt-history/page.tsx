@@ -87,12 +87,14 @@ export default function PromptHistoryPage() {
   const MAX_FREE_PROMPTS = 5;
   const { theme, resolvedTheme, setTheme } = useTheme();
 
-  // Set initial theme to dark only if no theme is set
+  // Set initial theme based on system preferences
   useEffect(() => {
     const savedTheme = localStorage.getItem('theme');
     if (!savedTheme) {
-      setTheme('dark');
-      document.documentElement.classList.add('dark');
+      // Check system preference
+      const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      setTheme(systemPrefersDark ? 'dark' : 'light');
+      document.documentElement.classList.toggle('dark', systemPrefersDark);
     }
   }, []);
 
@@ -266,7 +268,7 @@ export default function PromptHistoryPage() {
           <div className="w-full flex justify-between items-center py-6">
             <Link href="/" className="flex items-center gap-2 w-25 h-auto">
               <Image
-                src={resolvedTheme === "light" ? "/images/metamind-light.png" : "/images/metamind-dark.png"}
+                src={theme === "light" ? "/images/metamind-light.png" : "/images/metamind-dark.png"}
                 alt="MetaMind Logo"
                 width={200}
                 height={200}
@@ -288,11 +290,11 @@ export default function PromptHistoryPage() {
               {user && (
                 <div className="flex items-center gap-2">
                   <button
-                      onClick={() => setPremiumModalOpen(true)}
-                      className="px-4 py-2 bg-gradient-to-tr from-[#A07CFE] from-30% via-[#FE8FB5] via-60% to-[#FFBE7B] to-90% text-white text-sm font-medium rounded-lg hover:opacity-90 transition-opacity"
-                    >
-                      {user.is_premium ? "Buy Prompts" : "Upgrade"}
-                    </button>
+                    onClick={() => setPremiumModalOpen(true)}
+                    className="px-4 py-2 bg-gradient-to-tr from-[#A07CFE] from-30% via-[#FE8FB5] via-60% to-[#FFBE7B] to-90% text-white text-sm font-medium rounded-lg hover:opacity-90 transition-opacity"
+                  >
+                    {user.is_premium ? "Buy Prompts" : "Upgrade"}
+                  </button>
                   <div className="relative" ref={menuRef}>
                     <button
                       onClick={() => setMenuOpen(!menuOpen)}
