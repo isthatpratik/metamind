@@ -56,6 +56,37 @@ export async function POST(req: Request) {
         throw new Error('No user ID found in payment intent metadata');
       }
 
+      // Get current profile
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('total_prompts_limit, is_premium')
+        .eq('id', userId)
+        .single();
+
+      if (profileError) {
+        console.error('Error fetching profile:', profileError);
+        throw new Error(`Failed to fetch profile: ${profileError.message}`);
+      }
+
+      // Calculate new prompt limit
+      const currentLimit = profile?.total_prompts_limit || 0;
+      const newLimit = currentLimit + 150;
+
+      // Update user's profile with premium features
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({
+          total_prompts_limit: newLimit,
+          has_prompt_history_access: true,
+          is_premium: true,
+        })
+        .eq('id', userId);
+
+      if (updateError) {
+        console.error('Error updating profile:', updateError);
+        throw new Error(`Failed to update profile: ${updateError.message}`);
+      }
+
       // Record the payment in payments table
       const { error: paymentError } = await supabase
         .from('payments')
@@ -71,7 +102,7 @@ export async function POST(req: Request) {
         throw new Error(`Failed to record payment: ${paymentError.message}`);
       }
 
-      console.log('Payment recorded successfully');
+      console.log('Payment processed and profile updated successfully');
     }
 
     return NextResponse.json({ received: true });

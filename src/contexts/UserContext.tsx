@@ -16,6 +16,7 @@ interface UserContextType {
   promptCount: number;
   isLoading: boolean;
   setPromptCount: (count: number) => void;
+  refreshUserData: () => Promise<void>;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
@@ -24,6 +25,27 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [promptCount, setPromptCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
+
+  const refreshUserData = async () => {
+    try {
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      if (currentUser) {
+        const { data: profile } = await getProfile(currentUser.id);
+        if (profile) {
+          setUser({
+            id: currentUser.id,
+            email: currentUser.email || "",
+            name: profile.name || currentUser.email?.split("@")[0] || "",
+            is_premium: profile.is_premium || false,
+            total_prompts_limit: profile.total_prompts_limit || 5,
+          });
+          setPromptCount(profile.prompt_count || 0);
+        }
+      }
+    } catch (error) {
+      console.error("Error refreshing user data:", error);
+    }
+  };
 
   useEffect(() => {
     const checkUser = async () => {
@@ -79,26 +101,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === "SIGNED_IN" && session?.user) {
-        try {
-          // Fetch profile and prompt history in parallel
-          const [profileResult, historyResult] = await Promise.all([
-            getProfile(session.user.id),
-            getPromptHistory(session.user.id)
-          ]);
-
-          if (profileResult.data) {
-            setUser({
-              id: session.user.id,
-              email: session.user.email || "",
-              name: profileResult.data.name || session.user.email?.split("@")[0] || "",
-              is_premium: profileResult.data.is_premium || false,
-              total_prompts_limit: profileResult.data.total_prompts_limit || 5,
-            });
-            setPromptCount(profileResult.data.prompt_count || 0);
-          }
-        } catch (error) {
-          console.error("Error in auth state change:", error);
-        }
+        await refreshUserData();
       } else if (event === "SIGNED_OUT") {
         setUser(null);
         setPromptCount(0);
@@ -111,7 +114,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   return (
-    <UserContext.Provider value={{ user, promptCount, isLoading, setPromptCount }}>
+    <UserContext.Provider value={{ user, promptCount, isLoading, setPromptCount, refreshUserData }}>
       {children}
     </UserContext.Provider>
   );

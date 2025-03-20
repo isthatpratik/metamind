@@ -4,9 +4,11 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { getCurrentUser, handlePaymentSuccess } from '@/lib/supabase';
 import { toast } from 'sonner';
+import { useUser } from '@/contexts/UserContext';
 
 export default function PaymentSuccessPage() {
   const router = useRouter();
+  const { refreshUserData } = useUser();
   const [isProcessing, setIsProcessing] = useState(true);
   const [retryCount, setRetryCount] = useState(0);
   const MAX_RETRIES = 5;
@@ -39,6 +41,9 @@ export default function PaymentSuccessPage() {
             throw paymentError;
           }
 
+          // Refresh user data to get updated premium status
+          await refreshUserData();
+
           // Show success message with the new limit
           toast.success('Payment successful!', {
             description: `Your account has been upgraded with 150 additional prompts.`
@@ -67,7 +72,7 @@ export default function PaymentSuccessPage() {
     };
 
     handleSuccess();
-  }, [router, retryCount]);
+  }, [router, retryCount, refreshUserData]);
 
   return (
     <div className="flex min-h-screen items-center justify-center dark:bg-black">
