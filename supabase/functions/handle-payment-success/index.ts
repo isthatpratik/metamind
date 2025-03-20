@@ -107,10 +107,16 @@ serve(async (req: Request) => {
     console.log('Current profile:', profile)
 
     // Calculate new prompt limit
-    const currentLimit = profile?.total_prompts_limit || 0
-    const newLimit = currentLimit + 150
+    // If user is not premium, start from base limit of 5
+    const baseLimit = profile?.is_premium ? (profile?.total_prompts_limit || 0) : 5;
+    const newLimit = baseLimit + 150;
 
-    console.log('Updating profile with new limit:', newLimit)
+    console.log('Updating profile with new limit:', {
+      currentLimit: profile?.total_prompts_limit,
+      isPremium: profile?.is_premium,
+      baseLimit,
+      newLimit
+    });
 
     // Update user's profile with premium features
     const { error: updateError } = await supabaseClient
