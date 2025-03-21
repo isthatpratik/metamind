@@ -35,10 +35,10 @@ const MessageBubble = ({
 
   // Determine background color based on sender
   const bubbleClasses = cn(
-    "p-4 max-w-[85%] rounded-lg mb-4 dark:bg-gray-700 dark:border-white dark:border dark:text-white",
+    "p-4 max-w-[85%] rounded-lg mb-4 dark:bg-gray-700 dark:border-white/10 dark:border dark:text-white",
     isUser
       ? "bg-black text-white ml-auto"
-      : "bg-white text-black mr-auto border dark:bg-black/80 dark:border-white dark:text-white",
+      : "bg-white text-black mr-auto border dark:bg-black/80 dark:border-white/30 dark:text-white",
   );
 
   return (

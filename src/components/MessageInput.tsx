@@ -69,7 +69,7 @@ const MessageInput = ({
           placeholder={placeholder}
           disabled={disabled || isLoading}
           className={cn(
-            "resize-none overflow-hidden bg-white dark:bg-black dark:border-white dark:text-white rounded-lg border border-black/80 text-black focus:border-black focus:ring-0",
+            "resize-none overflow-hidden bg-white dark:bg-black dark:border-white/30 dark:text-white rounded-lg border border-black/80 text-black focus:border-black focus:ring-0",
             isLoading && "opacity-70"
           )}
           rows={1}

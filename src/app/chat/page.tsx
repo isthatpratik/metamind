@@ -1,24 +1,15 @@
 "use client";
 
 import React, { useState, useEffect, useRef, Suspense } from "react";
-import Image from "next/image";
 import { useRouter } from "next/navigation";
 import ChatInterface from "@/components/ChatInterface";
 import { generateAIResponse } from "@/lib/openai";
-import Link from "next/link";
 import AuthModal from "@/components/auth/AuthModal";
 import PremiumModal from "@/components/premium/PremiumModal";
 import SearchParamsClient from "@/components/SearchParamsClient";
 import { FlickeringGrid } from "@/components/magicui/flickering-grid";
-import {
-  supabase,
-  getProfile,
-  savePromptHistory,
-  signOut,
-} from "@/lib/supabase";
+import { supabase, savePromptHistory } from "@/lib/supabase";
 import { useToast } from "@/components/ui/use-toast";
-import { useTheme } from "next-themes";
-import { ThemeSwitcher } from "@/components/theme-switcher";
 import { useUser } from "@/contexts/UserContext";
 
 interface Message {
@@ -30,66 +21,16 @@ interface Message {
   toolType?: "V0" | "Cursor" | "Bolt" | "Tempo";
 }
 
-interface User {
-  id: string;
-  email: string;
-  name: string;
-  is_premium?: boolean;
-  total_prompts_limit?: number;
-}
-
 export default function ChatPage() {
-  const router = useRouter();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
-  const [error, setError] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [premiumModalOpen, setPremiumModalOpen] = useState(false);
   const [selectedTool, setSelectedTool] = useState<
     "V0" | "Cursor" | "Bolt" | "Tempo"
   >("Tempo");
-  const MAX_FREE_PROMPTS = 5;
-  const { theme, resolvedTheme, setTheme } = useTheme();
   const { user, promptCount, setPromptCount } = useUser();
-
-  // Set initial theme based on system preferences
-  useEffect(() => {
-    const savedTheme = localStorage.getItem("theme");
-    if (!savedTheme) {
-      // Check system preference
-      const systemPrefersDark = window.matchMedia(
-        "(prefers-color-scheme: dark)"
-      ).matches;
-      setTheme(systemPrefersDark ? "dark" : "light");
-      document.documentElement.classList.toggle("dark", systemPrefersDark);
-    }
-  }, []);
-
-  // Handle theme changes
-  useEffect(() => {
-    const root = document.documentElement;
-    if (resolvedTheme === "dark") {
-      root.classList.add("dark");
-    } else {
-      root.classList.remove("dark");
-    }
-  }, [resolvedTheme]);
-
-  // Handle clicks outside the menu to close it
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-        setMenuOpen(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, []);
 
   // Show welcome message only when user logs in
   useEffect(() => {
@@ -185,53 +126,30 @@ export default function ChatPage() {
     }
   };
 
-  const handleLogin = (userData: User) => {
-    setAuthModalOpen(false);
-  };
-
-  const handleLogout = async () => {
-    const { error } = await signOut();
-    if (error) {
-      toast({
-        title: "Error logging out",
-        description:
-          error instanceof Error ? error.message : "Failed to log out",
-        variant: "destructive",
-      });
-      return;
-    }
-    setMessages([]);
-    router.push("/");
-  };
-
-  const currentYear = new Date().getFullYear();
-
   return (
-    <Suspense fallback={<div>Loading...</div>}>
-      <SearchParamsClient setSelectedTool={setSelectedTool} />
-      <main className="flex flex-1 flex-col items-center bg-white dark:bg-black text-black dark:text-white">
+    <>
+      <Suspense fallback={<div>Loading search params...</div>}>
+        <SearchParamsClient setSelectedTool={setSelectedTool} />
+      </Suspense>
+      <main className="flex flex-1 flex-col items-center bg-black text-white">
         <div className="w-full max-w-7xl mx-auto px-4 flex flex-col flex-1">
           <div className="flex flex-col items-center justify-center min-h-[calc(100vh-10rem)] gap-8 w-full relative">
             <div className="absolute inset-0 overflow-hidden flex items-center justify-center pointer-events-none">
               <FlickeringGrid
-                className="relative z-0 [mask-image:radial-gradient(600px_circle_at_center,white,transparent)] dark:[mask-image:radial-gradient(600px_circle_at_center,white,transparent)]"
+                className="relative z-0 [mask-image:radial-gradient(600px_circle_at_center,white,transparent)]"
                 squareSize={5}
                 gridGap={6}
-                colors={
-                  theme === "dark"
-                    ? ["#ffffff", "#f5f5f5", "#e5e5e5"]
-                    : ["#A07CFE", "#FE8FB5", "#FFBE7B"]
-                }
+                colors={["#ffffff", "#f5f5f5", "#e5e5e5"]}
                 maxOpacity={0.6}
                 flickerChance={0.1}
               />
             </div>
-            <div className="text-center space-y-2 mb-8 relative z-10">
-              <h1 className="text-3xl font-semibold tracking-tight text-black dark:text-white">
-                MetaMind Prompt Generator
+            <div className="text-center space-y-2 pt-8">
+              <h1 className="text-3xl font-bold tracking-tight text-white relative">
+              Prompt. Create. Innovate.
               </h1>
             </div>
-            <div className="flex w-full max-w-4xl py-4 self-center relative border border-[#eaeaea] dark:border-none dark:bg-black rounded-lg overflow-hidden bg-white/80 backdrop-blur-sm dark:backdrop-blur-none before:absolute before:inset-0 before:-translate-x-full before:animate-[shimmer_2s_infinite] before:bg-gradient-to-r before:from-transparent before:via-white/60 before:to-transparent">
+            <div className="flex w-full max-w-5xl py-4 px-4 self-center relative bg-black/80 backdrop-blur-sm overflow-hidden">
               <ChatInterface
                 onSendMessage={handleSendMessage}
                 isLoading={isLoading}
@@ -243,6 +161,17 @@ export default function ChatPage() {
           </div>
         </div>
       </main>
-    </Suspense>
+      <AuthModal
+        isOpen={authModalOpen}
+        onClose={() => setAuthModalOpen(false)}
+        activeTab="login"
+        setActiveTab={() => {}}
+        onLogin={() => setAuthModalOpen(false)}
+      />
+      <PremiumModal
+        isOpen={premiumModalOpen}
+        onClose={() => setPremiumModalOpen(false)}
+      />
+    </>
   );
 }

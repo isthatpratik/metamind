@@ -4,8 +4,6 @@ import React, { useRef, useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { ThemeSwitcher } from "@/components/theme-switcher";
-import { useTheme } from "next-themes";
 import { useUser } from "@/contexts/UserContext";
 import { signOut } from "@/lib/supabase";
 import { toast } from "sonner";
@@ -17,16 +15,9 @@ interface NavbarProps {
 
 export function Navbar({ onOpenAuth, onOpenPremium }: NavbarProps) {
   const [menuOpen, setMenuOpen] = useState(false);
-  const [mounted, setMounted] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
-  const { theme, resolvedTheme } = useTheme();
   const { user, promptCount, isLoading: userLoading, setPromptCount } = useUser();
-
-  // Handle mounting state
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   // Handle clicks outside menu
   useEffect(() => {
@@ -60,33 +51,13 @@ export function Navbar({ onOpenAuth, onOpenPremium }: NavbarProps) {
     setMenuOpen(false); // Close menu after navigation
   };
 
-  // Don't render anything until mounted to prevent hydration mismatch
-  if (!mounted) {
-    return (
-      <div className="w-full bg-white dark:bg-black">
-        <div className="w-full max-w-7xl mx-auto px-4">
-          <div className="w-full flex justify-between items-center py-6">
-            <div className="flex items-center gap-2 w-25 h-auto">
-              <div className="w-[180px] h-[50px] bg-gray-200 dark:bg-gray-800 animate-pulse rounded-lg" />
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="h-10 w-10 bg-gray-200 dark:bg-gray-800 animate-pulse rounded-lg" />
-              <div className="h-10 w-32 bg-gray-200 dark:bg-gray-800 animate-pulse rounded-lg" />
-              <div className="h-10 w-20 bg-gray-200 dark:bg-gray-800 animate-pulse rounded-lg" />
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="w-full bg-white dark:bg-black">
+    <div className="w-full bg-black">
       <div className="w-full max-w-7xl mx-auto px-4">
         <div className="w-full flex justify-between items-center py-6">
           <Link href="/" className="flex items-center gap-2 w-25 h-auto">
             <Image
-              src={resolvedTheme === "dark" ? "/images/metamind-dark.png" : "/images/metamind-light.png"}
+              src="/images/metamind-dark.png"
               alt="MetaMind Logo"
               width={200}
               height={200}
@@ -95,13 +66,11 @@ export function Navbar({ onOpenAuth, onOpenPremium }: NavbarProps) {
             />
           </Link>
           <div className="flex items-center gap-2">
-            <ThemeSwitcher />
-
             {/* Prompt count display */}
             {userLoading ? (
-              <div className="hidden sm:block h-10 w-32 bg-gray-200 dark:bg-gray-800 animate-pulse rounded-lg" />
+              <div className="hidden sm:block h-10 w-32 bg-gray-800 animate-pulse rounded-lg" />
             ) : user && (
-              <span className="hidden sm:inline-block text-sm dark:text-white font-medium px-4 py-2 bg-white/80 dark:bg-transparent backdrop-blur-sm border border-[#eaeaea] dark:border-white/50 rounded-lg">
+              <span className="hidden sm:inline-block text-sm text-white font-medium px-4 py-2 bg-transparent backdrop-blur-sm border border-white/50 rounded-lg">
                 {user.is_premium 
                   ? `${promptCount}/${user.total_prompts_limit} Premium Prompts`
                   : `${promptCount}/${user.total_prompts_limit} Free Prompts`
@@ -112,20 +81,20 @@ export function Navbar({ onOpenAuth, onOpenPremium }: NavbarProps) {
             {/* Auth buttons or user menu */}
             {userLoading ? (
               <div className="flex gap-2">
-                <div className="h-10 w-20 bg-gray-200 dark:bg-gray-800 animate-pulse rounded-lg" />
-                <div className="h-10 w-20 bg-gray-200 dark:bg-gray-800 animate-pulse rounded-lg" />
+                <div className="h-10 w-20 bg-gray-800 animate-pulse rounded-lg" />
+                <div className="h-10 w-20 bg-gray-800 animate-pulse rounded-lg" />
               </div>
             ) : !user ? (
               <div className="flex gap-2">
                 <button
                   onClick={() => onOpenAuth("login")}
-                  className="px-4 py-2 bg-black text-white text-sm font-medium dark:border-white/50 dark:border rounded-lg"
+                  className="px-4 py-2 text-white text-sm font-medium border-white/50 border rounded-lg"
                 >
                   Sign In
                 </button>
                 <button
                   onClick={() => onOpenAuth("register")}
-                  className="px-4 py-2 bg-black text-white text-sm font-medium dark:border-white/50 dark:border rounded-lg"
+                  className="px-4 py-2 text-white text-sm font-medium border-white/50 border rounded-lg"
                 >
                   Sign Up
                 </button>
@@ -141,7 +110,7 @@ export function Navbar({ onOpenAuth, onOpenPremium }: NavbarProps) {
                 <div className="relative" ref={menuRef}>
                   <button
                     onClick={() => setMenuOpen(!menuOpen)}
-                    className="p-2 bg-white border border-[#eaeaea] dark:bg-transparent dark:text-white dark:border-white/50 rounded-lg"
+                    className="p-2 bg-transparent text-white border-white/50 border rounded-lg"
                   >
                     <svg
                       width="20"
@@ -159,20 +128,20 @@ export function Navbar({ onOpenAuth, onOpenPremium }: NavbarProps) {
                     </svg>
                   </button>
                   {menuOpen && (
-                    <div className="absolute right-0 mt-2 w-48 bg-white shadow-lg py-1 z-50 border border-[#eaeaea] rounded-lg">
-                      <div className="px-4 py-2 border-b border-[#eaeaea] dark:text-black">
+                    <div className="absolute right-0 mt-2 w-48 bg-neutral-950 backdrop-blur-sm shadow-lg py-1 z-50 border border-white/20 rounded-lg">
+                      <div className="px-4 py-2 border-b border-white/20 text-white">
                         <p className="text-sm font-medium">{user.name}</p>
-                        <p className="text-xs text-gray-500">{user.email}</p>
+                        <p className="text-xs text-gray-400">{user.email}</p>
                       </div>
                       <button
                         onClick={() => handleNavigation('/prompt-history')}
-                        className="block w-full text-left px-4 py-2 text-sm text-black hover:bg-[#f5f5f5] border-b border-[#eaeaea]"
+                        className="block w-full text-left px-4 py-2 text-sm text-white hover:bg-white/10 border-b border-white/20"
                       >
                         Prompt History
                       </button>
                       <button
                         onClick={handleLogout}
-                        className="block w-full text-left px-4 py-2 text-sm text-black hover:bg-[#f5f5f5]"
+                        className="block w-full text-left px-4 py-2 text-sm text-white hover:bg-white/10"
                       >
                         Logout
                       </button>

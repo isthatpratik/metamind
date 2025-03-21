@@ -2,24 +2,18 @@
 
 import React, { useState, useEffect, useRef, Suspense } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import AuthModal from "@/components/auth/AuthModal";
 import PremiumModal from "@/components/premium/PremiumModal";
 import MainPageRecoveryHandler from "@/components/auth/MainPageRecoveryHandler";
 import Image from "next/image";
 import { FlickeringGrid } from "@/components/magicui/flickering-grid";
-import { MagicCard } from "@/components/magicui/magic-card";
 import {
-  supabase,
   getProfile,
   signOut,
   getPromptHistory,
 } from "@/lib/supabase";
 import { toast } from "sonner";
-import { ThemeSwitcher } from "@/components/theme-switcher";
-import { useTheme } from "next-themes";
 import { useUser } from "@/contexts/UserContext";
-import { Footer } from "@/components/layout/Footer";
 
 interface User {
   id: string;
@@ -42,29 +36,7 @@ export default function Home() {
     "V0" | "Cursor" | "Bolt" | "Tempo" | null
   >(null);
   const MAX_FREE_PROMPTS = 5;
-  const { theme, resolvedTheme, setTheme } = useTheme();
   const { user, promptCount, isLoading, setPromptCount } = useUser();
-
-  // Set initial theme based on system preferences
-  useEffect(() => {
-    const savedTheme = localStorage.getItem('theme');
-    if (!savedTheme) {
-      // Check system preference
-      const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      setTheme(systemPrefersDark ? 'dark' : 'light');
-      document.documentElement.classList.toggle('dark', systemPrefersDark);
-    }
-  }, []);
-
-  // Handle theme changes
-  useEffect(() => {
-    const root = document.documentElement;
-    if (resolvedTheme === 'dark') {
-      root.classList.add('dark');
-    } else {
-      root.classList.remove('dark');
-    }
-  }, [resolvedTheme]);
 
   // Handle clicks outside the menu to close it
   useEffect(() => {
@@ -182,12 +154,8 @@ export default function Home() {
               className="relative z-0 [mask-image:radial-gradient(600px_circle_at_center,white,transparent)] dark:[mask-image:radial-gradient(600px_circle_at_center,white,transparent)]"
               squareSize={5}
               gridGap={6}
-              colors={
-                theme === "dark"
-                  ? ["#ffffff", "#f5f5f5", "#e5e5e5"]
-                  : ["#A07CFE", "#FE8FB5", "#FFBE7B"]
-              }
-              maxOpacity={theme === "dark" ? 0.3 : 0.6}
+              colors={["#ffffff", "#f5f5f5", "#e5e5e5"]}
+              maxOpacity={0.3}
               flickerChance={0.1}
             />
           </div>
@@ -211,13 +179,13 @@ export default function Home() {
                     )
                   }
                   className="rounded-lg cursor-pointer transition-all duration-300
-                    bg-white dark:bg-black backdrop-blur-sm
+                    bg-white dark:bg-white/5 backdrop-blur-md
                     border border-black/10 dark:border-white/50
                     shadow-lg dark:shadow-white/10 hover:shadow-xl
                     relative overflow-hidden"
                 >
                   <div className="md:p-8 p-6 flex flex-col items-center text-center">
-                    <div className="w-12 h-12 md:w-16 md:h-16 bg-white dark:bg-transparent flex items-center justify-center mb-3 overflow-hidden rounded-lg border border-[#eaeaea] dark:border-white/50">
+                    <div className="w-12 h-12 md:w-16 md:h-16 bg-white dark:bg-transparent flex items-center justify-center mb-3 overflow-hidden rounded-lg shadow-2xl">
                       <Image
                         src={`/images/${tool.id.toLowerCase()}.${tool.id === "V0" || tool.id === "Bolt" ? "png" : "jpg"}`}
                         alt={`${tool.name} logo`}

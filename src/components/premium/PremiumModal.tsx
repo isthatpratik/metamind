@@ -160,15 +160,15 @@ const FeaturesView = ({ onUpgrade, onClose, isPremium, isUpgrading }: { onUpgrad
         <div className="space-y-4 grid items-center justify-center">
           <div className="flex items-center gap-2">
             <CircleCheck className="h-5 w-5 text-green-500" />
-            <span>150 Additional Prompts</span>
+            <span className="text-black">150 Additional Prompts</span>
           </div>
           <div className="flex items-center gap-2">
             <CircleCheck className="h-5 w-5 text-green-500" />
-            <span>Access to Prompt History</span>
+            <span className="text-black">Access to Prompt History</span>
           </div>
           <div className="flex items-center gap-2">
             <CircleCheck className="h-5 w-5 text-green-500" />
-            <span>One-time payment of $3.99</span>
+            <span className="text-black">One-time payment of $3.99</span>
           </div>
         </div>
       </div>

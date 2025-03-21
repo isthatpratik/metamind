@@ -4,10 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
-import { useTheme } from "next-themes";
-import { ThemeSwitcher } from "@/components/theme-switcher";
 import { Suspense } from "react";
-import { FlickeringGrid } from "@/components/magicui/flickering-grid";
 import {
   Accordion,
   AccordionContent,
@@ -17,7 +14,7 @@ import {
 import { Toaster } from "@/components/ui/toaster";
 import { CopyIcon, CheckIcon } from "lucide-react";
 import PremiumModal from "@/components/premium/PremiumModal";
-import { supabase } from "@/lib/supabase";
+import { supabase, getProfile, getPromptHistory } from "@/lib/supabase";
 import { useToast } from "@/components/ui/use-toast";
 import { useUser } from "@/contexts/UserContext";
 
@@ -58,33 +55,10 @@ const getPromptSummary = (message: string): string => {
   return message.substring(0, maxLength) + "...";
 };
 
-const getProfile = async (userId: string) => {
-  const { data, error } = await supabase
-    .from("profiles")
-    .select("*")
-    .eq("id", userId)
-    .single();
-  return { data, error };
-};
-
-const getPromptHistory = async (userId: string) => {
-  const { data, error } = await supabase
-    .from("prompt_history")
-    .select("*")
-    .eq("user_id", userId)
-    .order("created_at", { ascending: false });
-  return { data, error };
-};
-
-const signOut = async () => {
-  const { error } = await supabase.auth.signOut();
-  return { error };
-};
-
 export default function PromptHistoryPage() {
   const router = useRouter();
   const { toast } = useToast();
-  const { user, isLoading: userLoading } = useUser();
+  const { user, isLoading: userLoading, refreshUserData } = useUser();
   const [prompts, setPrompts] = useState<PromptHistory[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -94,29 +68,6 @@ export default function PromptHistoryPage() {
   const [copiedPrompts, setCopiedPrompts] = useState<{
     [key: string]: boolean;
   }>({});
-  const MAX_FREE_PROMPTS = 5;
-  const { theme, resolvedTheme, setTheme } = useTheme();
-
-  // Set initial theme based on system preferences
-  useEffect(() => {
-    const savedTheme = localStorage.getItem('theme');
-    if (!savedTheme) {
-      // Check system preference
-      const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      setTheme(systemPrefersDark ? 'dark' : 'light');
-      document.documentElement.classList.toggle('dark', systemPrefersDark);
-    }
-  }, []);
-
-  // Handle theme changes
-  useEffect(() => {
-    const root = document.documentElement;
-    if (resolvedTheme === 'dark') {
-      root.classList.add('dark');
-    } else {
-      root.classList.remove('dark');
-    }
-  }, [resolvedTheme]);
 
   // Handle clicks outside the menu to close it
   useEffect(() => {
@@ -132,25 +83,35 @@ export default function PromptHistoryPage() {
   }, []);
 
   useEffect(() => {
-    const checkUser = async () => {
+    const checkUserAndLoadHistory = async () => {
       try {
-        // Wait for user context to be ready
-        if (userLoading) return;
-
-        // Check if user is authenticated and premium
-        if (!user) {
-          console.log("No user found, redirecting to home");
+        // First check session directly with supabase
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        
+        if (sessionError || !session) {
           toast({
             title: "Authentication required",
-            description: "Please sign in to continue",
+            description: "Please sign in to access prompt history",
             variant: "destructive",
           });
           router.push("/");
           return;
         }
 
-        if (!user.is_premium) {
-          console.log("User is not premium, redirecting to home");
+        // If we have a session but no user context or it's still loading, refresh user data
+        if (!user && !userLoading) {
+          await refreshUserData();
+          return;
+        }
+
+        // Don't proceed if still loading user context
+        if (userLoading) {
+          return;
+        }
+
+        // At this point we should have both session and user context
+        if (!user?.is_premium) {
+          setPremiumModalOpen(true);
           toast({
             title: "Premium feature",
             description: "Please upgrade to access prompt history",
@@ -160,10 +121,8 @@ export default function PromptHistoryPage() {
           return;
         }
 
-        console.log("User is premium, fetching prompt history");
-        // Get prompt history
-        const { data: promptHistory, error: historyError } =
-          await getPromptHistory(user.id);
+        // Load prompt history
+        const { data: promptHistory, error: historyError } = await getPromptHistory(session.user.id);
 
         if (historyError) {
           console.error("Error getting prompt history:", historyError);
@@ -172,39 +131,25 @@ export default function PromptHistoryPage() {
             description: "Please try again later",
             variant: "destructive",
           });
-          router.push("/");
           return;
         }
 
         setPrompts(promptHistory || []);
         setPromptCount(user.total_prompts_limit || 5);
-        setIsLoading(false);
       } catch (error) {
-        console.error("Error in checkUser:", error);
+        console.error("Error in prompt history:", error);
         toast({
           title: "Error",
           description: "An unexpected error occurred",
           variant: "destructive",
         });
-        router.push("/");
+      } finally {
+        setIsLoading(false);
       }
     };
 
-    checkUser();
-  }, [user, userLoading, router]);
-
-  const handleLogout = async () => {
-    const { error } = await signOut();
-    if (error) {
-      toast({
-        title: "Error logging out",
-        description: "Failed to log out. Please try again.",
-        variant: "destructive",
-      });
-      return;
-    }
-    router.push("/");
-  };
+    checkUserAndLoadHistory();
+  }, [user, userLoading, router, toast, refreshUserData]);
 
   const copyToClipboard = async (text: string, promptId: string) => {
     try {
@@ -255,10 +200,11 @@ export default function PromptHistoryPage() {
     }
   };
 
-  if (isLoading) {
+  // Show loading state while either the user context or data is loading
+  if (userLoading || isLoading) {
     return (
-      <div className="flex flex-1 items-center justify-center dark:bg-black">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 dark:border-white border-primary border-t-transparent"></div>
+      <div className="flex flex-1 min-h-screen items-center justify-center bg-black">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-white border-t-transparent"></div>
       </div>
     );
   }
@@ -266,14 +212,14 @@ export default function PromptHistoryPage() {
   return (
     <Suspense fallback={<div className="text-black dark:text-white">Loading...</div>}>
       <main className="flex flex-col items-center justify-start bg-white dark:bg-black dark:text-white text-black flex-1">
-        <div className="w-full max-w-7xl flex flex-col flex-1 px-4">
-          <div className="text-center space-y-2 mb-4 pt-8">
+        <div className="w-full max-w-7xl flex flex-col px-4 min-h-[calc(100vh-10rem)]">
+          <div className="text-center space-y-2 pt-8">
             <h1 className="text-3xl font-bold tracking-tight text-black dark:text-white">
               Prompt History
             </h1>
           </div>
-          <div className="flex flex-1 w-full py-4 relative border border-[#eaeaea] dark:border-white/50 dark:bg-black rounded-lg overflow-hidden bg-white/80 backdrop-blur-sm dark:backdrop-blur-none before:absolute before:inset-0 before:-translate-x-full before:animate-[shimmer_2s_infinite] before:bg-gradient-to-r before:from-transparent before:via-white/60 before:to-transparent">
-            <div className="w-full max-w-7xl mx-auto px-6 py-4">
+          <div className="flex w-full py-4 relative dark:bg-black rounded-lg overflow-hidden bg-white/80 backdrop-blur-sm dark:backdrop-blur-none before:absolute before:inset-0 before:-translate-x-full before:animate-[shimmer_2s_infinite] before:bg-gradient-to-r before:from-transparent before:via-white/60 before:to-transparent">
+            <div className="w-full max-w-7xl mx-auto py-4">
               {prompts.length === 0 ? (
                 <div className="text-center py-8">
                   <p className="text-gray-500">
