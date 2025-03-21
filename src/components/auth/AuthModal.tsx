@@ -443,7 +443,7 @@ const AuthModal = ({
               </div>
               <Button
                 type="submit"
-                className="w-full bg-white/70 dark:bg-white/70 text-black hover:bg-white/80"
+                className="w-full"
                 disabled={isLoading}
               >
                 {isLoading ? (

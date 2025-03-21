@@ -19,10 +19,7 @@ const config = {
   	},
   	extend: {
   		fontFamily: {
-  			fustat: [
-  				'Fustat',
-  				'sans-serif'
-  			]
+  			fustat: ['var(--font-fustat)', 'sans-serif']
   		},
   		colors: {
   			border: 'hsl(var(--border))',

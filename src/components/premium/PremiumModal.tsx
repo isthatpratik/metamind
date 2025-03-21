@@ -144,7 +144,7 @@ const PaymentForm = ({ onBack, onClose }: { onBack: () => void; onClose: () => v
   );
 };
 
-const FeaturesView = ({ onUpgrade, onClose, isPremium }: { onUpgrade: () => void; onClose: () => void; isPremium: boolean }) => {
+const FeaturesView = ({ onUpgrade, onClose, isPremium, isUpgrading }: { onUpgrade: () => void; onClose: () => void; isPremium: boolean; isUpgrading: boolean }) => {
   return (
     <>
       <DialogHeader>
@@ -177,15 +177,21 @@ const FeaturesView = ({ onUpgrade, onClose, isPremium }: { onUpgrade: () => void
         <Button
           variant="outline"
           onClick={onClose}
+          disabled={isUpgrading}
           className="w-full sm:w-auto bg-white rounded-lg text-black hover:bg-[#f5f5f5] hover:text-black border border-[#d4d4d4]"
         >
           Maybe Later
         </Button>
         <Button
           onClick={onUpgrade}
+          disabled={isUpgrading}
           className="w-full sm:w-auto bg-black hover:bg-black/90 text-white rounded-lg"
         >
-          {isPremium ? "Buy Prompts" : "Upgrade Now"}
+          {isUpgrading ? (
+            <div className="h-5 w-5 border-2 border-white border-t-transparent rounded-full animate-spin mx-auto"></div>
+          ) : (
+            isPremium ? "Buy Prompts" : "Upgrade Now"
+          )}
         </Button>
       </DialogFooter>
     </>
@@ -198,6 +204,7 @@ export function PremiumModal({ isOpen, onClose }: PremiumModalProps) {
   const [isPremium, setIsPremium] = useState(false);
   const [currentPrompts, setCurrentPrompts] = useState(0);
   const [totalPrompts, setTotalPrompts] = useState(0);
+  const [isUpgrading, setIsUpgrading] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -215,11 +222,16 @@ export function PremiumModal({ isOpen, onClose }: PremiumModalProps) {
         setTotalPrompts(profile?.total_prompts_limit || 0);
       }
     };
-    checkPremiumStatus();
-  }, []);
+    if (isOpen) {
+      checkPremiumStatus();
+    }
+  }, [isOpen]);
 
   const handleUpgrade = async () => {
+    if (isUpgrading) return;
+    
     try {
+      setIsUpgrading(true);
       const { data: { session } } = await supabase.auth.getSession();
       
       if (!session?.access_token) {
@@ -263,12 +275,21 @@ export function PremiumModal({ isOpen, onClose }: PremiumModalProps) {
         description: error instanceof Error ? error.message : 'Failed to create payment intent',
         variant: "destructive",
       });
+    } finally {
+      setIsUpgrading(false);
     }
   };
 
   const handleBack = () => {
     setShowPayment(false);
     setClientSecret(null);
+  };
+
+  const handleClose = () => {
+    setShowPayment(false);
+    setClientSecret(null);
+    setIsUpgrading(false);
+    onClose();
   };
 
   const appearance = {
@@ -281,7 +302,7 @@ export function PremiumModal({ isOpen, onClose }: PremiumModalProps) {
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-[425px] max-h-[90vh] overflow-y-auto">
         {showPayment && clientSecret ? (
           <Elements 
@@ -291,10 +312,15 @@ export function PremiumModal({ isOpen, onClose }: PremiumModalProps) {
               appearance,
             }}
           >
-            <PaymentForm onBack={handleBack} onClose={onClose} />
+            <PaymentForm onBack={handleBack} onClose={handleClose} />
           </Elements>
         ) : (
-          <FeaturesView onUpgrade={handleUpgrade} onClose={onClose} isPremium={isPremium} />
+          <FeaturesView 
+            onUpgrade={handleUpgrade} 
+            onClose={handleClose} 
+            isPremium={isPremium} 
+            isUpgrading={isUpgrading}
+          />
         )}
       </DialogContent>
     </Dialog>

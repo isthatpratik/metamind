@@ -1,27 +1,25 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import Image from "next/image";
-import {
-  supabase,
-  getProfile,
-  getPromptHistory,
-  signOut,
-} from "@/lib/supabase";
-import { useToast } from "@/components/ui/use-toast";
-import { Toaster } from "@/components/ui/toaster";
-import PremiumModal from "@/components/premium/PremiumModal";
+import Link from "next/link";
+import { useTheme } from "next-themes";
+import { ThemeSwitcher } from "@/components/theme-switcher";
+import { Suspense } from "react";
+import { FlickeringGrid } from "@/components/magicui/flickering-grid";
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { CopyIcon, CheckIcon } from "@radix-ui/react-icons";
-import { useTheme } from "next-themes";
-import { ThemeSwitcher } from "@/components/theme-switcher";
+import { Toaster } from "@/components/ui/toaster";
+import { CopyIcon, CheckIcon } from "lucide-react";
+import PremiumModal from "@/components/premium/PremiumModal";
+import { supabase } from "@/lib/supabase";
+import { useToast } from "@/components/ui/use-toast";
+import { useUser } from "@/contexts/UserContext";
 
 interface PromptHistory {
   id: string;
@@ -46,35 +44,47 @@ const TOOL_LOGOS = {
   Tempo: "/images/tempo.jpg",
 } as const;
 
-const getPromptSummary = (message: string): string => {
-  // Remove common prefixes that might appear in prompts
-  const cleanMessage = message
-    .replace(
-      /^(please|can you|could you|help me|i want to|i need to|how to)/i,
-      ""
-    )
-    .trim();
-
-  // Split into words and get first 6 words
-  const words = cleanMessage.split(/\s+/);
-  const summary = words.slice(0, 6).join(" ");
-
-  // Add ellipsis if the message is longer
-  return words.length > 6 ? `${summary}...` : summary;
-};
-
 const formatDate = (date: string) => {
   return new Date(date).toLocaleDateString("en-US", {
+    month: "short",
     day: "numeric",
-    month: "long",
     year: "numeric",
   });
+};
+
+const getPromptSummary = (message: string): string => {
+  const maxLength = 50;
+  if (message.length <= maxLength) return message;
+  return message.substring(0, maxLength) + "...";
+};
+
+const getProfile = async (userId: string) => {
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("id", userId)
+    .single();
+  return { data, error };
+};
+
+const getPromptHistory = async (userId: string) => {
+  const { data, error } = await supabase
+    .from("prompt_history")
+    .select("*")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false });
+  return { data, error };
+};
+
+const signOut = async () => {
+  const { error } = await supabase.auth.signOut();
+  return { error };
 };
 
 export default function PromptHistoryPage() {
   const router = useRouter();
   const { toast } = useToast();
-  const [user, setUser] = useState<User | null>(null);
+  const { user, isLoading: userLoading } = useUser();
   const [prompts, setPrompts] = useState<PromptHistory[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -123,34 +133,24 @@ export default function PromptHistoryPage() {
 
   useEffect(() => {
     const checkUser = async () => {
-      const {
-        data: { session },
-        error: sessionError,
-      } = await supabase.auth.getSession();
+      try {
+        // Wait for user context to be ready
+        if (userLoading) return;
 
-      if (sessionError) {
-        console.error("Error getting session:", sessionError);
-        router.push("/");
-        return;
-      }
+        // Check if user is authenticated and premium
+        if (!user) {
+          console.log("No user found, redirecting to home");
+          toast({
+            title: "Authentication required",
+            description: "Please sign in to continue",
+            variant: "destructive",
+          });
+          router.push("/");
+          return;
+        }
 
-      if (!session?.user) {
-        router.push("/");
-        return;
-      }
-
-      const { data: profile, error: profileError } = await getProfile(
-        session.user.id
-      );
-
-      if (profileError) {
-        console.error("Error getting profile:", profileError);
-        return;
-      }
-
-      if (profile) {
-        // Check if user has access to prompt history
-        if (!profile.has_prompt_history_access) {
+        if (!user.is_premium) {
+          console.log("User is not premium, redirecting to home");
           toast({
             title: "Premium feature",
             description: "Please upgrade to access prompt history",
@@ -160,18 +160,10 @@ export default function PromptHistoryPage() {
           return;
         }
 
-        setUser({
-          id: session.user.id,
-          email: session.user.email || "",
-          name: profile.name || session.user.email?.split("@")[0] || "",
-          is_premium: profile.is_premium || false,
-          total_prompts_limit: profile.total_prompts_limit || 5,
-        });
-        setPromptCount(profile.prompt_count || 0);
-
+        console.log("User is premium, fetching prompt history");
         // Get prompt history
         const { data: promptHistory, error: historyError } =
-          await getPromptHistory(session.user.id);
+          await getPromptHistory(user.id);
 
         if (historyError) {
           console.error("Error getting prompt history:", historyError);
@@ -180,23 +172,33 @@ export default function PromptHistoryPage() {
             description: "Please try again later",
             variant: "destructive",
           });
-        } else {
-          setPrompts(promptHistory || []);
+          router.push("/");
+          return;
         }
-      }
 
-      setIsLoading(false);
+        setPrompts(promptHistory || []);
+        setPromptCount(user.total_prompts_limit || 5);
+        setIsLoading(false);
+      } catch (error) {
+        console.error("Error in checkUser:", error);
+        toast({
+          title: "Error",
+          description: "An unexpected error occurred",
+          variant: "destructive",
+        });
+        router.push("/");
+      }
     };
 
     checkUser();
-  }, [router, toast]);
+  }, [user, userLoading, router]);
 
   const handleLogout = async () => {
     const { error } = await signOut();
     if (error) {
       toast({
         title: "Error logging out",
-        description: error.message,
+        description: "Failed to log out. Please try again.",
         variant: "destructive",
       });
       return;
@@ -255,187 +257,115 @@ export default function PromptHistoryPage() {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
+      <div className="flex flex-1 items-center justify-center dark:bg-black">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 dark:border-white border-primary border-t-transparent"></div>
       </div>
     );
   }
 
   return (
-    <main className="flex min-h-screen flex-col items-center bg-white dark:bg-black dark:text-white text-black">
-      <div className="w-full">
-        <div className="w-full max-w-7xl mx-auto px-4">
-          <div className="w-full flex justify-between items-center py-6">
-            <Link href="/" className="flex items-center gap-2 w-25 h-auto">
-              <Image
-                src={theme === "light" ? "/images/metamind-light.png" : "/images/metamind-dark.png"}
-                alt="MetaMind Logo"
-                width={200}
-                height={200}
-                className="object-contain lg:w-[180px] w-[120px]"
-              />
-            </Link>
-            <div className="flex items-center gap-2">
-              <ThemeSwitcher />
-
-              {user && (
-                <span className="hidden sm:inline-block text-sm font-medium px-4 py-2 bg-white/80 dark:bg-transparent backdrop-blur-sm border border-[#eaeaea] rounded-lg">
-                  {user.is_premium 
-                    ? `${promptCount}/${user.total_prompts_limit} Premium Prompts`
-                    : `${promptCount}/${user.total_prompts_limit} Free Prompts`
-                  }
-                </span>
-              )}
-
-              {user && (
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => setPremiumModalOpen(true)}
-                    className="px-4 py-2 bg-gradient-to-tr from-[#A07CFE] from-30% via-[#FE8FB5] via-60% to-[#FFBE7B] to-90% text-white text-sm font-medium rounded-lg hover:opacity-90 transition-opacity"
+    <Suspense fallback={<div className="text-black dark:text-white">Loading...</div>}>
+      <main className="flex flex-col items-center justify-start bg-white dark:bg-black dark:text-white text-black flex-1">
+        <div className="w-full max-w-7xl flex flex-col flex-1 px-4">
+          <div className="text-center space-y-2 mb-4 pt-8">
+            <h1 className="text-3xl font-bold tracking-tight text-black dark:text-white">
+              Prompt History
+            </h1>
+          </div>
+          <div className="flex flex-1 w-full py-4 relative border border-[#eaeaea] dark:border-white/50 dark:bg-black rounded-lg overflow-hidden bg-white/80 backdrop-blur-sm dark:backdrop-blur-none before:absolute before:inset-0 before:-translate-x-full before:animate-[shimmer_2s_infinite] before:bg-gradient-to-r before:from-transparent before:via-white/60 before:to-transparent">
+            <div className="w-full max-w-7xl mx-auto px-6 py-4">
+              {prompts.length === 0 ? (
+                <div className="text-center py-8">
+                  <p className="text-gray-500">
+                    No prompts yet. Start generating some prompts!
+                  </p>
+                  <Link
+                    href="/"
+                    className="mt-4 inline-block px-4 py-2 bg-black text-white dark:text-black dark:bg-white rounded-lg hover:bg-black/90"
                   >
-                    {user.is_premium ? "Buy Prompts" : "Upgrade"}
-                  </button>
-                  <div className="relative" ref={menuRef}>
-                    <button
-                      onClick={() => setMenuOpen(!menuOpen)}
-                      className="p-2 bg-white border border-[#eaeaea] dark:bg-transparent dark:border-white rounded-lg"
-                    >
-                      <svg
-                        width="20"
-                        height="20"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        <line x1="3" y1="12" x2="21" y2="12"></line>
-                        <line x1="3" y1="6" x2="21" y2="6"></line>
-                        <line x1="3" y1="18" x2="21" y2="18"></line>
-                      </svg>
-                    </button>
-                    {menuOpen && user && (
-                      <div className="absolute right-0 mt-2 w-48 bg-white shadow-lg py-1 z-50 border border-[#eaeaea] rounded-lg">
-                        <div className="px-4 py-2 border-b border-[#eaeaea]">
-                          <p className="text-sm font-medium dark:text-black">{user.name}</p>
-                          <p className="text-xs text-gray-500">{user.email}</p>
-                        </div>
-                        <Link
-                          href="/"
-                          className="block w-full text-left px-4 py-2 text-sm text-black hover:bg-[#f5f5f5] border-b border-[#eaeaea]"
-                        >
-                          Generate Prompts
-                        </Link>
-                        <button
-                          onClick={handleLogout}
-                          className="block w-full text-left px-4 py-2 text-sm text-black hover:bg-[#f5f5f5]"
-                        >
-                          Logout
-                        </button>
-                      </div>
-                    )}
-                  </div>
+                    Generate Prompts
+                  </Link>
                 </div>
+              ) : (
+                <Accordion type="single" collapsible className="space-y-4">
+                  {prompts.map((prompt) => (
+                    <AccordionItem
+                      key={prompt.id}
+                      value={prompt.id}
+                      className="border border-[#eaeaea] dark:border-white/50 rounded-md px-6"
+                    >
+                      <AccordionTrigger className="hover:no-underline [&[data-state=open]>svg]:rotate-180">
+                        <div className="flex items-center justify-between w-full">
+                          <div className="flex items-center gap-4">
+                            <div className="w-8 h-8 relative flex-shrink-0">
+                              <Image
+                                src={TOOL_LOGOS[prompt.tool_type]}
+                                alt={`${prompt.tool_type} logo`}
+                                fill
+                                className="object-contain rounded-lg"
+                              />
+                            </div>
+                            <span className="text-sm font-medium capitalize">
+                              {getPromptSummary(prompt.message)}
+                            </span>
+                          </div>
+                          <span className="text-sm text-gray-500 ml-4">
+                            {formatDate(prompt.created_at)}
+                          </span>
+                        </div>
+                      </AccordionTrigger>
+                      <AccordionContent>
+                        <div className="space-y-4 py-4">
+                          <div>
+                            <div className="flex items-center justify-between mb-2">
+                              <h3 className="font-medium">Your Request</h3>
+                              <div
+                                onClick={() =>
+                                  copyToClipboard(prompt.message, prompt.id)
+                                }
+                                className="p-2 hover:bg-[#f5f5f5] dark:hover:bg-white/10 rounded-md transition-colors cursor-pointer"
+                                title="Copy prompt"
+                                role="button"
+                                tabIndex={0}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter" || e.key === " ") {
+                                    e.preventDefault();
+                                    copyToClipboard(prompt.message, prompt.id);
+                                  }
+                                }}
+                              >
+                                {copiedPrompts[prompt.id] ? (
+                                  <CheckIcon className="h-4 w-4 text-green-500" />
+                                ) : (
+                                  <CopyIcon className="h-4 w-4" />
+                                )}
+                              </div>
+                            </div>
+                            <p className="text-gray-600 dark:text-zinc-400">{prompt.message}</p>
+                          </div>
+                          <div>
+                            <h3 className="font-medium mb-2">Metamind Response</h3>
+                            <div className="bg-[#f5f5f5] dark:bg-white/10 dark:border dark:border-white/30 p-4 rounded-lg">
+                              <pre className="whitespace-pre-wrap font-mono text-sm">
+                                {prompt.ai_response}
+                              </pre>
+                            </div>
+                          </div>
+                        </div>
+                      </AccordionContent>
+                    </AccordionItem>
+                  ))}
+                </Accordion>
               )}
             </div>
           </div>
         </div>
-      </div>
-
-      <div className="w-full max-w-7xl mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold mb-8">Prompt History</h1>
-
-        {prompts.length === 0 ? (
-          <div className="text-center py-12">
-            <p className="text-gray-500">
-              No prompts yet. Start generating some prompts!
-            </p>
-            <Link
-              href="/"
-              className="mt-4 inline-block px-4 py-2 bg-black text-white dark:text-black dark:bg-whiterounded-lg hover:bg-black/90"
-            >
-              Generate Prompts
-            </Link>
-          </div>
-        ) : (
-          <Accordion type="single" collapsible className="space-y-4">
-            {prompts.map((prompt) => (
-              <AccordionItem
-                key={prompt.id}
-                value={prompt.id}
-                className="border border-[#eaeaea] dark:border-white/70 rounded-lg px-6"
-              >
-                <AccordionTrigger className="hover:no-underline [&[data-state=open]>svg]:rotate-180">
-                  <div className="flex items-center justify-between w-full">
-                    <div className="flex items-center gap-4">
-                      <div className="w-8 h-8 relative flex-shrink-0">
-                        <Image
-                          src={TOOL_LOGOS[prompt.tool_type]}
-                          alt={`${prompt.tool_type} logo`}
-                          fill
-                          className="object-contain rounded-lg"
-                        />
-                      </div>
-                      <span className="text-sm font-medium capitalize">
-                        {getPromptSummary(prompt.message)}
-                      </span>
-                    </div>
-                    <span className="text-sm text-gray-500 ml-4">
-                      {formatDate(prompt.created_at)}
-                    </span>
-                  </div>
-                </AccordionTrigger>
-                <AccordionContent>
-                  <div className="space-y-4 py-4">
-                    <div>
-                      <div className="flex items-center justify-between mb-2">
-                        <h3 className="font-medium">Your Request</h3>
-                        <div
-                          onClick={() =>
-                            copyToClipboard(prompt.message, prompt.id)
-                          }
-                          className="p-2 hover:bg-[#f5f5f5] dark:hover:bg-white/10 rounded-md transition-colors cursor-pointer"
-                          title="Copy prompt"
-                          role="button"
-                          tabIndex={0}
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter" || e.key === " ") {
-                              e.preventDefault();
-                              copyToClipboard(prompt.message, prompt.id);
-                            }
-                          }}
-                        >
-                          {copiedPrompts[prompt.id] ? (
-                            <CheckIcon className="h-4 w-4 text-green-500" />
-                          ) : (
-                            <CopyIcon className="h-4 w-4" />
-                          )}
-                        </div>
-                      </div>
-                      <p className="text-gray-600 dark:text-zinc-400">{prompt.message}</p>
-                    </div>
-                    <div>
-                      <h3 className="font-medium mb-2">Metamind Response</h3>
-                      <div className="bg-[#f5f5f5] dark:bg-white/10 dark:border dark:border-white/30 p-4 rounded-lg">
-                        <pre className="whitespace-pre-wrap font-mono text-sm">
-                          {prompt.ai_response}
-                        </pre>
-                      </div>
-                    </div>
-                  </div>
-                </AccordionContent>
-              </AccordionItem>
-            ))}
-          </Accordion>
-        )}
-      </div>
-
+      </main>
       <PremiumModal
         isOpen={premiumModalOpen}
         onClose={() => setPremiumModalOpen(false)}
       />
       <Toaster />
-    </main>
+    </Suspense>
   );
 }

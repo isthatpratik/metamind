@@ -43,8 +43,26 @@ export const signIn = async (email: string, password: string) => {
 };
 
 export const signOut = async () => {
-  const { error } = await supabase.auth.signOut();
-  return { error };
+  try {
+    // First clear any local storage data
+    localStorage.removeItem('theme');
+    
+    // Sign out from Supabase
+    const { error } = await supabase.auth.signOut();
+    
+    if (error) {
+      console.error('Error signing out:', error);
+      return { error };
+    }
+
+    // Clear any remaining auth state
+    await supabase.auth.refreshSession();
+    
+    return { error: null };
+  } catch (error) {
+    console.error('Error in signOut:', error);
+    return { error };
+  }
 };
 
 export const checkExistingEmail = async (email: string) => {

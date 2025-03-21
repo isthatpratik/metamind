@@ -19,6 +19,7 @@ import { toast } from "sonner";
 import { ThemeSwitcher } from "@/components/theme-switcher";
 import { useTheme } from "next-themes";
 import { useUser } from "@/contexts/UserContext";
+import { Footer } from "@/components/layout/Footer";
 
 interface User {
   id: string;
@@ -96,12 +97,13 @@ export default function Home() {
   const handleLogout = async () => {
     const { error } = await signOut();
     if (error) {
-      toast.error("Error logging out", {
-        description: error.message,
-        descriptionClassName: "text-gray-500",
+      toast("Error logging out", {
+        description: "Failed to sign out. Please try again.",
       });
       return;
     }
+    setPromptCount(0);
+    setAuthModalOpen(false);
     router.push("/");
   };
 
@@ -165,7 +167,7 @@ export default function Home() {
   ];
 
   return (
-    <main className="flex min-h-screen flex-col items-center bg-white dark:bg-black text-black dark:text-white">
+    <main className="flex flex-1 flex-col items-center bg-white dark:bg-black text-black dark:text-white">
       <Suspense fallback={null}>
         <MainPageRecoveryHandler
           setActiveTab={setActiveTab}
@@ -173,120 +175,11 @@ export default function Home() {
         />
       </Suspense>
 
-      <div className="w-full">
-        <div className="w-full max-w-7xl mx-auto px-4">
-          <div className="w-full flex justify-between items-center py-6">
-            <Link href="/" className="flex items-center gap-2 w-25 h-auto">
-              <Image
-                src={theme === "light" ? "/images/metamind-light.png" : "/images/metamind-dark.png"}
-                alt="MetaMind Logo"
-                width={200}
-                height={200}
-                className="object-contain lg:w-[180px] w-[120px]"
-              />
-            </Link>
-            <div className="flex items-center gap-2">
-              <ThemeSwitcher />
-
-              {isLoading && !user ? (
-                <div className="h-10 w-32 bg-gray-200 dark:bg-gray-800 animate-pulse rounded-lg" />
-              ) : user && (
-                <span className="hidden sm:inline-block text-sm font-medium px-4 py-2 bg-white/80 dark:bg-transparent backdrop-blur-sm border border-[#eaeaea] rounded-lg">
-                  {user.is_premium 
-                    ? `${promptCount}/${user.total_prompts_limit} Premium Prompts`
-                    : `${promptCount}/${user.total_prompts_limit} Free Prompts`
-                  }
-                </span>
-              )}
-
-              {!isLoading && !user ? (
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => {
-                      setActiveTab("login");
-                      setAuthModalOpen(true);
-                    }}
-                    className="hidden sm:inline-block px-4 py-2 bg-black text-white text-sm font-medium dark:border-white dark:border rounded-lg"
-                  >
-                    Sign In
-                  </button>
-                  <button
-                    onClick={() => {
-                      setActiveTab("register");
-                      setAuthModalOpen(true);
-                    }}
-                    className="hidden sm:inline-block px-4 py-2 bg-black text-white text-sm font-medium dark:border-white dark:border rounded-lg"
-                  >
-                    Sign Up
-                  </button>
-                </div>
-              ) : !isLoading && user && (
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => setPremiumModalOpen(true)}
-                    className="px-4 py-2 bg-gradient-to-tr from-[#A07CFE] from-30% via-[#FE8FB5] via-60% to-[#FFBE7B] to-90% text-white text-sm font-medium rounded-lg hover:opacity-90 transition-opacity"
-                  >
-                    {user.is_premium ? "Buy Prompts" : "Upgrade"}
-                  </button>
-                  <div className="relative" ref={menuRef}>
-                    <button
-                      onClick={() => setMenuOpen(!menuOpen)}
-                      className="p-2 bg-white border border-[#eaeaea] dark:bg-transparent dark:border-white rounded-lg"
-                    >
-                      <svg
-                        width="20"
-                        height="20"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        <line x1="3" y1="12" x2="21" y2="12"></line>
-                        <line x1="3" y1="6" x2="21" y2="6"></line>
-                        <line x1="3" y1="18" x2="21" y2="18"></line>
-                      </svg>
-                    </button>
-                    {menuOpen && user && (
-                      <div className="absolute right-0 mt-2 w-48 bg-white shadow-lg py-1 z-50 border border-[#eaeaea] rounded-lg">
-                        <div className="px-4 py-2 border-b border-[#eaeaea] dark:text-black">
-                          <p className="text-sm font-medium">{user.name}</p>
-                          <p className="text-xs text-gray-500">{user.email}</p>
-                        </div>
-                        <button
-                          onClick={() => {
-                            if (user.is_premium) {
-                              router.push('/prompt-history');
-                            } else {
-                              setPremiumModalOpen(true);
-                            }
-                          }}
-                          className="block w-full text-left px-4 py-2 text-sm text-black hover:bg-[#f5f5f5] border-b border-[#eaeaea]"
-                        >
-                          Prompt History
-                        </button>
-                        <button
-                          onClick={handleLogout}
-                          className="block w-full text-left px-4 py-2 text-sm text-black hover:bg-[#f5f5f5]"
-                        >
-                          Logout
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="flex-1 w-full max-w-7xl mx-auto px-4 flex flex-col">
-        <div className="relative flex flex-col items-center justify-center gap-8 py-12 w-full flex-1">
-          <div className="absolute inset-0 overflow-hidden flex items-center justify-center">
+      <div className="w-full max-w-7xl mx-auto px-4 flex flex-col flex-1">
+        <div className="flex flex-col items-center justify-center min-h-[calc(100vh-10rem)] gap-8 w-full relative">
+          <div className="absolute inset-0 overflow-hidden flex items-center justify-center pointer-events-none">
             <FlickeringGrid
-              className="relative z-0 [mask-image:radial-gradient(600px_circle_at_center,white,transparent)] dark:[mask-image:radial-gradient(450px_circle_at_center,white,transparent)]"
+              className="relative z-0 [mask-image:radial-gradient(600px_circle_at_center,white,transparent)] dark:[mask-image:radial-gradient(600px_circle_at_center,white,transparent)]"
               squareSize={5}
               gridGap={6}
               colors={
@@ -298,7 +191,7 @@ export default function Home() {
               flickerChance={0.1}
             />
           </div>
-          <div className="text-center space-y-2 mb-6 relative z-10 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.5)_70%,rgba(255,255,255,0)_71%)] dark:bg-[radial-gradient(circle_at_center,rgba(0,0,0,0.3)_70%,rgba(0,0,0,0)_71%)] rounded-full px-8 py-6">
+          <div className="text-center space-y-2 relative z-10 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.5)_70%,rgba(255,255,255,0)_71%)] dark:bg-[radial-gradient(circle_at_center,rgba(0,0,0,0.3)_70%,rgba(0,0,0,0)_71%)] rounded-full px-8 py-6">
             <h2 className="text-3xl font-bold tracking-tight text-black dark:text-white md:text-5xl">
               {user ? `Welcome, ${user.name}` : "Welcome to MetaMind"}
             </h2>
@@ -308,20 +201,23 @@ export default function Home() {
           </div>
 
           <div className="w-full max-w-7xl mx-auto flex justify-center">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 max-w-7xl">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 max-w-7xl w-full">
               {tools.map((tool) => (
-                <MagicCard
+                <div
                   key={tool.id}
-                  className="rounded-lg"
-                  gradientOpacity={0.12}
                   onClick={() =>
                     handleToolSelect(
                       tool.id as "V0" | "Cursor" | "Bolt" | "Tempo"
                     )
                   }
+                  className="rounded-lg cursor-pointer transition-all duration-300
+                    bg-white dark:bg-black backdrop-blur-sm
+                    border border-black/10 dark:border-white/50
+                    shadow-lg dark:shadow-white/10 hover:shadow-xl
+                    relative overflow-hidden"
                 >
-                  <div className="md:p-12 p-8 flex flex-col items-center text-center">
-                    <div className="w-16 h-16 bg-white dark:bg-transparent flex items-center justify-center mb-3 overflow-hidden rounded-lg border border-[#eaeaea] dark:border-none">
+                  <div className="md:p-8 p-6 flex flex-col items-center text-center">
+                    <div className="w-12 h-12 md:w-16 md:h-16 bg-white dark:bg-transparent flex items-center justify-center mb-3 overflow-hidden rounded-lg border border-[#eaeaea] dark:border-white/50">
                       <Image
                         src={`/images/${tool.id.toLowerCase()}.${tool.id === "V0" || tool.id === "Bolt" ? "png" : "jpg"}`}
                         alt={`${tool.name} logo`}
@@ -330,31 +226,18 @@ export default function Home() {
                         className="object-cover w-full h-full"
                       />
                     </div>
-                    <h3 className="text-xl font-semibold text-black mb-2 dark:text-white">
+                    <h3 className="text-lg md:text-xl font-semibold text-black mb-2 dark:text-white">
                       {tool.name}
                     </h3>
-                    <p className="text-black text-sm line-clamp-3 text-balance dark:text-white/70">
+                    <p className="text-black text-xs md:text-sm line-clamp-3 text-balance dark:text-white/70">
                       {tool.description}
                     </p>
                   </div>
-                </MagicCard>
+                </div>
               ))}
             </div>
           </div>
         </div>
-
-        <footer className="text-center bg-transparent text-xs text-gray-500 py-6 relative">
-          <p>
-            © {currentYear} MetaMind - Product prompt generator by{" "}
-            <Link
-              href="https://ampvc.co"
-              target="_blank"
-              className="text-gray-700 dark:text-white/80 hover:text-black transition-colors"
-            >
-              Ampersand
-            </Link>
-          </p>
-        </footer>
       </div>
 
       <Suspense fallback={null}>

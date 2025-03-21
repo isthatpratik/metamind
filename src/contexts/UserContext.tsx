@@ -25,6 +25,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [promptCount, setPromptCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
+  const [lastRefresh, setLastRefresh] = useState<number>(0);
 
   const refreshUserData = async () => {
     try {
@@ -40,6 +41,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
             total_prompts_limit: profile.total_prompts_limit || 5,
           });
           setPromptCount(profile.prompt_count || 0);
+          setLastRefresh(Date.now());
         }
       }
     } catch (error) {
@@ -50,6 +52,12 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const checkUser = async () => {
       try {
+        // Check if we have recently refreshed the data (within last 30 seconds)
+        if (Date.now() - lastRefresh < 30000 && user) {
+          setIsLoading(false);
+          return;
+        }
+
         const {
           data: { session },
           error: sessionError,
@@ -63,9 +71,8 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
 
         if (session?.user) {
           // Fetch profile and prompt history in parallel
-          const [profileResult, historyResult] = await Promise.all([
+          const [profileResult] = await Promise.all([
             getProfile(session.user.id),
-            getPromptHistory(session.user.id)
           ]);
 
           if (profileResult.error) {
@@ -83,6 +90,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
               total_prompts_limit: profileResult.data.total_prompts_limit || 5,
             });
             setPromptCount(profileResult.data.prompt_count || 0);
+            setLastRefresh(Date.now());
           }
         }
       } catch (error) {
@@ -93,19 +101,21 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     };
 
     checkUser();
-  }, []);
+  }, [user, lastRefresh]);
 
   // Listen for auth state changes
   useEffect(() => {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
+      setIsLoading(true);
       if (event === "SIGNED_IN" && session?.user) {
         await refreshUserData();
       } else if (event === "SIGNED_OUT") {
         setUser(null);
         setPromptCount(0);
       }
+      setIsLoading(false);
     });
 
     return () => {

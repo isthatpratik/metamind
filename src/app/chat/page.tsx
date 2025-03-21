@@ -57,22 +57,24 @@ export default function ChatPage() {
 
   // Set initial theme based on system preferences
   useEffect(() => {
-    const savedTheme = localStorage.getItem('theme');
+    const savedTheme = localStorage.getItem("theme");
     if (!savedTheme) {
       // Check system preference
-      const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      setTheme(systemPrefersDark ? 'dark' : 'light');
-      document.documentElement.classList.toggle('dark', systemPrefersDark);
+      const systemPrefersDark = window.matchMedia(
+        "(prefers-color-scheme: dark)"
+      ).matches;
+      setTheme(systemPrefersDark ? "dark" : "light");
+      document.documentElement.classList.toggle("dark", systemPrefersDark);
     }
   }, []);
 
   // Handle theme changes
   useEffect(() => {
     const root = document.documentElement;
-    if (resolvedTheme === 'dark') {
-      root.classList.add('dark');
+    if (resolvedTheme === "dark") {
+      root.classList.add("dark");
     } else {
-      root.classList.remove('dark');
+      root.classList.remove("dark");
     }
   }, [resolvedTheme]);
 
@@ -192,7 +194,8 @@ export default function ChatPage() {
     if (error) {
       toast({
         title: "Error logging out",
-        description: error.message,
+        description:
+          error instanceof Error ? error.message : "Failed to log out",
         variant: "destructive",
       });
       return;
@@ -206,147 +209,39 @@ export default function ChatPage() {
   return (
     <Suspense fallback={<div>Loading...</div>}>
       <SearchParamsClient setSelectedTool={setSelectedTool} />
-      <main className="flex min-h-screen flex-col items-center justify-start bg-white dark:bg-black dark:text-white text-black">
-        <div className="w-full bg-white/80 dark:bg-black/80 z-50">
-          <div className="w-full max-w-7xl mx-auto px-4">
-            <div className="w-full flex justify-between items-center py-6">
-              <Link href="/" className="flex items-center gap-2 w-25 h-auto">
-                <Image
-                  src={theme === "light" ? "/images/metamind-light.png" : "/images/metamind-dark.png"}
-                  alt="MetaMind Logo"
-                  width={200}
-                  height={200}
-                  className="object-contain lg:w-[180px] w-[120px]"
-                />
-              </Link>
-              <div className="flex items-center gap-2">
-                <ThemeSwitcher />
-
-                {isLoading && !user ? (
-                  <div className="h-10 w-32 bg-gray-200 dark:bg-gray-800 animate-pulse rounded-lg" />
-                ) : (
-                  user && (
-                    <span className="hidden sm:inline-block text-sm font-medium px-4 py-2 bg-white/80 dark:bg-transparent backdrop-blur-sm border border-[#eaeaea] rounded-lg">
-                      {user.is_premium
-                        ? `${promptCount}/${user.total_prompts_limit} Premium Prompts`
-                        : `${promptCount}/${user.total_prompts_limit} Free Prompts`}
-                    </span>
-                  )
-                )}
-
-                {user && (
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => setPremiumModalOpen(true)}
-                      className="px-4 py-2 bg-gradient-to-tr from-[#A07CFE] from-30% via-[#FE8FB5] via-60% to-[#FFBE7B] to-90% text-white text-sm font-medium rounded-lg hover:opacity-90 transition-opacity"
-                    >
-                      {user.is_premium ? "Buy Prompts" : "Upgrade"}
-                    </button>
-                    <div className="relative" ref={menuRef}>
-                      <button
-                        onClick={() => setMenuOpen(!menuOpen)}
-                        className="p-2 bg-white border border-[#eaeaea] dark:bg-transparent dark:border-white rounded-lg hover:border-black transition-all"
-                      >
-                        <svg
-                          width="20"
-                          height="20"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        >
-                          <line x1="3" y1="12" x2="21" y2="12"></line>
-                          <line x1="3" y1="6" x2="21" y2="6"></line>
-                          <line x1="3" y1="18" x2="21" y2="18"></line>
-                        </svg>
-                      </button>
-                      {menuOpen && user && (
-                        <div className="absolute right-0 mt-2 w-48 bg-white shadow-lg py-1 z-10 border border-[#eaeaea] rounded-lg">
-                          <div className="px-4 py-2 border-b border-[#eaeaea]">
-                            <p className="text-sm font-medium dark:text-black">
-                              {user.name}
-                            </p>
-                            <p className="text-xs text-gray-500">
-                              {user.email}
-                            </p>
-                          </div>
-                          <Link
-                            href="/prompt-history"
-                            className="block w-full text-left px-4 py-2 text-sm text-black hover:bg-[#f5f5f5] border-b border-[#eaeaea]"
-                          >
-                            Prompt History
-                          </Link>
-                          <button
-                            onClick={handleLogout}
-                            className="block w-full text-left px-4 py-2 text-sm text-black hover:bg-[#f5f5f5]"
-                          >
-                            Logout
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
+      <main className="flex flex-1 flex-col items-center bg-white dark:bg-black text-black dark:text-white">
+        <div className="w-full max-w-7xl mx-auto px-4 flex flex-col flex-1">
+          <div className="flex flex-col items-center justify-center min-h-[calc(100vh-10rem)] gap-8 w-full relative">
+            <div className="absolute inset-0 overflow-hidden flex items-center justify-center pointer-events-none">
+              <FlickeringGrid
+                className="relative z-0 [mask-image:radial-gradient(600px_circle_at_center,white,transparent)] dark:[mask-image:radial-gradient(600px_circle_at_center,white,transparent)]"
+                squareSize={5}
+                gridGap={6}
+                colors={
+                  theme === "dark"
+                    ? ["#ffffff", "#f5f5f5", "#e5e5e5"]
+                    : ["#A07CFE", "#FE8FB5", "#FFBE7B"]
+                }
+                maxOpacity={0.6}
+                flickerChance={0.1}
+              />
+            </div>
+            <div className="text-center space-y-2 mb-8 relative z-10">
+              <h1 className="text-3xl font-semibold tracking-tight text-black dark:text-white">
+                MetaMind Prompt Generator
+              </h1>
+            </div>
+            <div className="flex w-full max-w-4xl py-4 self-center relative border border-[#eaeaea] dark:border-none dark:bg-black rounded-lg overflow-hidden bg-white/80 backdrop-blur-sm dark:backdrop-blur-none before:absolute before:inset-0 before:-translate-x-full before:animate-[shimmer_2s_infinite] before:bg-gradient-to-r before:from-transparent before:via-white/60 before:to-transparent">
+              <ChatInterface
+                onSendMessage={handleSendMessage}
+                isLoading={isLoading}
+                initialMessages={messages}
+                initialTool={selectedTool}
+                showToolSelector={false}
+              />
             </div>
           </div>
         </div>
-
-        <div className="flex-1 w-full max-w-5xl flex flex-col justify-center items-center min-h-0 px-4">
-          <div className="text-center space-y-2 mb-4 pt-12">
-            <h1 className="text-3xl font-bold tracking-tight text-black dark:text-white">
-              MetaMind Prompt Generator
-            </h1>
-          </div>
-          <div className="absolute inset-0 z-0 overflow-hidden flex items-center justify-center">
-            <FlickeringGrid
-              className="relative z-0 [mask-image:radial-gradient(700px_circle_at_center,white,transparent)] dark:[mask-image:radial-gradient(700px_circle_at_center,white,transparent)]"
-              squareSize={5}
-              gridGap={6}
-              colors={
-                theme === "dark"
-                  ? ["#ffffff", "#f5f5f5", "#e5e5e5"]
-                  : ["#A07CFE", "#FE8FB5", "#FFBE7B"]
-              }
-              maxOpacity={theme === "dark" ? 0.3 : 0.6}
-              flickerChance={0.1}
-            />
-          </div>
-          <div className="flex w-full py-4 relative border border-[#eaeaea] dark:border-none dark:bg-black rounded-lg overflow-hidden bg-white/80 backdrop-blur-sm dark:backdrop-blur-none before:absolute before:inset-0 before:-translate-x-full before:animate-[shimmer_2s_infinite] before:bg-gradient-to-r before:from-transparent before:via-white/60 before:to-transparent">
-            <ChatInterface
-              onSendMessage={handleSendMessage}
-              isLoading={isLoading}
-              initialMessages={messages}
-              initialTool={selectedTool}
-              showToolSelector={false}
-            />
-          </div>
-        </div>
-        <footer className="text-center bg-transparent text-xs text-gray-500 py-6">
-          <p>
-            © {currentYear} MetaMind - Product prompt generator by{" "}
-            <Link
-              href="https://ampvc.co"
-              target="_blank"
-              className="text-gray-700 hover:text-black transition-colors"
-            >
-              Ampersand
-            </Link>
-          </p>
-        </footer>
-
-        <AuthModal
-          isOpen={authModalOpen}
-          onClose={() => (user ? setAuthModalOpen(false) : null)}
-          onLogin={handleLogin}
-        />
-
-        <PremiumModal
-          isOpen={premiumModalOpen}
-          onClose={() => setPremiumModalOpen(false)}
-        />
       </main>
     </Suspense>
   );

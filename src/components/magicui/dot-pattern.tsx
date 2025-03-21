@@ -135,7 +135,7 @@ export function DotPattern({
           animate={
             glow
               ? {
-                  opacity: [0.4, 1, 0.4],
+                  opacity: [0.6, 1, 0.6],
                   scale: [1, 1.5, 1],
                 }
               : {}
