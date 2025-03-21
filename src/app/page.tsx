@@ -33,7 +33,7 @@ export default function Home() {
   const router = useRouter();
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [selectedTool, setSelectedTool] = useState<
-    "V0" | "Cursor" | "Bolt" | "Tempo" | null
+    "V0" | "Cursor" | "Bolt" | "Tempo" | "Lovable" | null
   >(null);
   const MAX_FREE_PROMPTS = 5;
   const { user, promptCount, isLoading, setPromptCount } = useUser();
@@ -51,7 +51,7 @@ export default function Home() {
     };
   }, []);
 
-  const handleToolSelect = async (tool: "V0" | "Cursor" | "Bolt" | "Tempo") => {
+  const handleToolSelect = async (tool: "V0" | "Cursor" | "Bolt" | "Tempo" | "Lovable") => {
     if (!user) {
       setAuthModalOpen(true);
       return;
@@ -113,13 +113,11 @@ export default function Home() {
     }
   };
 
-  const currentYear = new Date().getFullYear();
-
   const tools = [
     {
       id: "V0",
       name: "V0",
-      description: "AI-powered design tool for creating beautiful interfaces",
+      description: "AI-powered development tool for creating beautiful interfaces",
     },
     {
       id: "Cursor",
@@ -129,12 +127,17 @@ export default function Home() {
     {
       id: "Bolt",
       name: "Bolt",
-      description: "AI-powered development platform for building apps",
+      description: "AI-powered development platform for building full-stack apps",
     },
     {
       id: "Tempo",
-      name: "Tempo Labs",
-      description: "AI-powered platform for building web applications",
+      name: "Tempo",
+      description: "AI-powered platform for building React Applications faster",
+    },
+    {
+      id: "Lovable",
+      name: "Lovable",
+      description: "AI-powered development tool for creating lovable user experiences",
     },
   ];
 
@@ -169,13 +172,13 @@ export default function Home() {
           </div>
 
           <div className="w-full max-w-7xl mx-auto flex justify-center">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 max-w-7xl w-full">
+            <div className="grid grid-cols-1 xl:grid-cols-5 md:grid-cols-3 gap-4 max-w-7xl w-full">
               {tools.map((tool) => (
                 <div
                   key={tool.id}
                   onClick={() =>
                     handleToolSelect(
-                      tool.id as "V0" | "Cursor" | "Bolt" | "Tempo"
+                      tool.id as "V0" | "Cursor" | "Bolt" | "Tempo" | "Lovable"
                     )
                   }
                   className="rounded-lg cursor-pointer transition-all duration-300

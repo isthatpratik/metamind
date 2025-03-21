@@ -114,11 +114,11 @@ const PaymentForm = ({ onBack, onClose }: { onBack: () => void; onClose: () => v
           variant="ghost"
           size="icon"
           onClick={onBack}
-          className="hover:bg-transparent"
+          className="bg-black"
         >
           <ArrowLeft className="h-4 w-4" />
         </Button>
-        <h3 className="text-lg font-semibold">Complete Your Purchase</h3>
+        <h3 className="text-lg font-semibold text-black">Complete Your Purchase</h3>
       </div>
       {!isElementsReady && (
         <div className="flex items-center justify-center py-8">

@@ -13,15 +13,15 @@ interface Message {
   isUser: boolean;
   timestamp: string;
   syntaxHighlight?: boolean;
-  toolType?: "V0" | "Cursor" | "Bolt" | "Tempo";
+  toolType?: "V0" | "Cursor" | "Bolt" | "Tempo" | "Lovable";
 }
 
 interface ChatInterfaceProps {
   initialMessages?: Message[];
-  initialTool?: "V0" | "Cursor" | "Bolt" | "Tempo";
+  initialTool?: "V0" | "Cursor" | "Bolt" | "Tempo" | "Lovable";
   onSendMessage?: (
     message: string,
-    tool?: "V0" | "Cursor" | "Bolt" | "Tempo",
+    tool?: "V0" | "Cursor" | "Bolt" | "Tempo" | "Lovable",
   ) => void;
   isLoading?: boolean;
   showToolSelector?: boolean;
@@ -33,23 +33,23 @@ const MemoizedMessageHistory = memo(MessageHistory);
 const MemoizedMessageInput = memo(MessageInput);
 
 const ChatInterface = ({
+  initialTool = "V0",
   initialMessages = [
     {
       id: "1",
       message: "Hello! How can I help you with AI tool instructions today?",
       isUser: false,
       timestamp: new Date().toLocaleTimeString(),
-      toolType: "Tempo",
+      toolType: initialTool,
     },
   ],
-  initialTool = "Tempo",
   onSendMessage = () => {},
   isLoading = false,
   showToolSelector = true,
 }: ChatInterfaceProps) => {
   const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [selectedTool, setSelectedTool] = useState<
-    "V0" | "Cursor" | "Bolt" | "Tempo"
+    "V0" | "Cursor" | "Bolt" | "Tempo" | "Lovable"
   >(initialTool);
   const [error, setError] = useState<string | null>(null);
   const [localIsLoading, setLocalIsLoading] = useState<boolean>(isLoading);
@@ -58,6 +58,15 @@ const ChatInterface = ({
   useEffect(() => {
     setMessages(initialMessages);
   }, [initialMessages]);
+
+  // Update messages' toolType when selectedTool changes
+  useEffect(() => {
+    setMessages(prevMessages => 
+      prevMessages.map(msg => 
+        msg.isUser ? msg : { ...msg, toolType: selectedTool }
+      )
+    );
+  }, [selectedTool]);
 
   const handleSendMessage = useCallback(
     (message: string) => {
@@ -83,7 +92,7 @@ const ChatInterface = ({
   );
 
   const handleToolChange = useCallback(
-    (tool: "V0" | "Cursor" | "Bolt" | "Tempo") => {
+    (tool: "V0" | "Cursor" | "Bolt" | "Tempo" | "Lovable") => {
       setSelectedTool(tool);
     },
     [],
@@ -132,7 +141,7 @@ const ChatInterface = ({
         />
       </div>
       <ShineBorder shineColor={["#A07CFE", "#FE8FB5", "#FFBE7B"]} />
-      <Toaster />
+      
     </div>
   );
 };

@@ -1,6 +1,6 @@
 export async function generateAIResponse(
   message: string,
-  tool: "V0" | "Cursor" | "Bolt" | "Tempo",
+  tool: "V0" | "Cursor" | "Bolt" | "Tempo" | "Lovable",
   signal?: AbortSignal,
 ) {
   try {
@@ -18,6 +18,8 @@ export async function generateAIResponse(
       Bolt: "You are an expert in Bolt AI development tool. Based on the user's product idea, create a detailed prompt that they can use with Bolt to build their application. Include specific feature requirements, technical specifications, and implementation guidance. Format the prompt to be directly usable in Bolt.",
       Tempo:
         "You are an expert in Tempo AI development platform. Based on the user's product idea, create a detailed prompt that they can use with Tempo to build their application. Include specific component structures, styling preferences, and functionality details. Format the prompt to be directly usable in Tempo's chat interface.",
+      Lovable:
+        "You are an expert in Lovable AI design tool. Based on the user's product idea, create a detailed prompt that they can use with Lovable to design their application. Include specific UI/UX requirements, design system recommendations, and visual style guidelines. Format the prompt to be directly usable in Lovable's interface.",
     };
 
     const response = await fetch("https://api.openai.com/v1/chat/completions", {

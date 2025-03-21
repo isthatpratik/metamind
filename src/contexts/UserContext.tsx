@@ -16,7 +16,7 @@ interface UserContextType {
   promptCount: number;
   isLoading: boolean;
   setPromptCount: (count: number) => void;
-  refreshUserData: (force?: boolean) => Promise<void>;
+  refreshUserData: (force?: boolean) => Promise<User | null>;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
@@ -27,95 +27,111 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const [lastRefresh, setLastRefresh] = useState<number>(0);
   const REFRESH_INTERVAL = 5 * 60 * 1000; // 5 minutes
+  const [isInitialized, setIsInitialized] = useState(false);
 
-  const refreshUserData = async (force: boolean = false) => {
+  const refreshUserData = async (force: boolean = false): Promise<User | null> => {
     try {
       // Don't refresh if we've refreshed recently, unless forced
       if (!force && Date.now() - lastRefresh < REFRESH_INTERVAL) {
-        return;
+        return user;
       }
 
       const { data: { user: currentUser } } = await supabase.auth.getUser();
       if (currentUser) {
         const { data: profile } = await getProfile(currentUser.id);
         if (profile) {
-          setUser({
+          const userData: User = {
             id: currentUser.id,
             email: currentUser.email || "",
             name: profile.name || currentUser.email?.split("@")[0] || "",
             is_premium: profile.is_premium || false,
             total_prompts_limit: profile.total_prompts_limit || 5,
-          });
+          };
+          setUser(userData);
           setPromptCount(profile.prompt_count || 0);
           setLastRefresh(Date.now());
+          return userData;
         }
-      } else {
-        setUser(null);
-        setPromptCount(0);
       }
+      setUser(null);
+      setPromptCount(0);
+      return null;
     } catch (error) {
       console.error("Error refreshing user data:", error);
+      return null;
     }
   };
 
+  // Initial session check
   useEffect(() => {
-    const checkUser = async () => {
+    const initializeAuth = async () => {
       try {
-        const {
-          data: { session },
-          error: sessionError,
-        } = await supabase.auth.getSession();
-
-        if (sessionError) {
-          console.error("Error getting session:", sessionError);
-          setIsLoading(false);
-          return;
-        }
-
+        const { data: { session } } = await supabase.auth.getSession();
+        
         if (session?.user) {
-          const { data: profile } = await getProfile(session.user.id);
-          if (profile) {
-            setUser({
-              id: session.user.id,
-              email: session.user.email || "",
-              name: profile.name || session.user.email?.split("@")[0] || "",
-              is_premium: profile.is_premium || false,
-              total_prompts_limit: profile.total_prompts_limit || 5,
-            });
-            setPromptCount(profile.prompt_count || 0);
-            setLastRefresh(Date.now());
+          const userData = await refreshUserData(true);
+          if (userData) {
+            // Store user data in localStorage for faster initial load
+            localStorage.setItem('cachedUser', JSON.stringify(userData));
           }
+        } else {
+          setUser(null);
+          localStorage.removeItem('cachedUser');
         }
       } catch (error) {
-        console.error("Error in checkUser:", error);
+        console.error("Error in initializeAuth:", error);
       } finally {
+        setIsInitialized(true);
         setIsLoading(false);
       }
     };
 
-    checkUser();
+    // Try to load cached user data first
+    const cachedUser = localStorage.getItem('cachedUser');
+    if (cachedUser) {
+      try {
+        const parsed = JSON.parse(cachedUser);
+        setUser(parsed);
+        setIsLoading(false);
+      } catch (e) {
+        localStorage.removeItem('cachedUser');
+      }
+    }
+
+    initializeAuth();
   }, []);
 
   // Listen for auth state changes
   useEffect(() => {
+    if (!isInitialized) return;
+
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === "SIGNED_IN" && session?.user) {
-        await refreshUserData(true); // Force refresh on sign in
+        await refreshUserData(true);
       } else if (event === "SIGNED_OUT") {
         setUser(null);
         setPromptCount(0);
+        localStorage.removeItem('cachedUser');
       }
     });
 
     return () => {
       subscription.unsubscribe();
     };
-  }, []);
+  }, [isInitialized]);
+
+  const contextValue = {
+    user,
+    promptCount,
+    isLoading: isLoading && !user, // Only show loading if we don't have user data
+    setPromptCount,
+    refreshUserData
+  };
 
   return (
-    <UserContext.Provider value={{ user, promptCount, isLoading, setPromptCount, refreshUserData }}>
+    <UserContext.Provider value={contextValue}>
       {children}
     </UserContext.Provider>
   );

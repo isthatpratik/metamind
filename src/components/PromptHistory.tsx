@@ -15,7 +15,7 @@ interface PromptHistoryProps {
     id: string;
     message: string;
     timestamp: string;
-    toolType: "V0" | "Cursor" | "Bolt" | "Tempo";
+    toolType: "V0" | "Cursor" | "Bolt" | "Tempo" | "Lovable";
   }[];
   onClose: () => void;
 }

@@ -20,7 +20,7 @@ interface HeaderProps {
   onLogout: () => void;
   promptCount: number;
   maxPrompts: number;
-  selectedTool?: "V0" | "Cursor" | "Bolt" | "Tempo";
+  selectedTool?: "V0" | "Cursor" | "Bolt" | "Tempo" | "Lovable";
 }
 
 const Header = ({

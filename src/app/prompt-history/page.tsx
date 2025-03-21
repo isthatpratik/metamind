@@ -22,7 +22,7 @@ interface PromptHistory {
   id: string;
   message: string;
   ai_response: string;
-  tool_type: "V0" | "Cursor" | "Bolt" | "Tempo";
+  tool_type: "V0" | "Cursor" | "Bolt" | "Tempo" | "Lovable";
   created_at: string;
 }
 
@@ -39,6 +39,7 @@ const TOOL_LOGOS = {
   Cursor: "/images/cursor.jpg",
   Bolt: "/images/bolt.png",
   Tempo: "/images/tempo.jpg",
+  Lovable: "/images/lovable.jpg",
 } as const;
 
 const formatDate = (date: string) => {
@@ -85,10 +86,16 @@ export default function PromptHistoryPage() {
   useEffect(() => {
     const checkUserAndLoadHistory = async () => {
       try {
-        // First check session directly with supabase
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        // Start loading prompt history early
+        let promptHistoryPromise;
+        const { data: { session } } = await supabase.auth.getSession();
         
-        if (sessionError || !session) {
+        if (session) {
+          promptHistoryPromise = getPromptHistory(session.user.id);
+        }
+
+        // If no session, redirect to home
+        if (!session) {
           toast({
             title: "Authentication required",
             description: "Please sign in to access prompt history",
@@ -98,10 +105,9 @@ export default function PromptHistoryPage() {
           return;
         }
 
-        // If we have a session but no user context or it's still loading, refresh user data
+        // If we have a session but no user context, refresh user data
         if (!user && !userLoading) {
           await refreshUserData();
-          return;
         }
 
         // Don't proceed if still loading user context
@@ -109,7 +115,7 @@ export default function PromptHistoryPage() {
           return;
         }
 
-        // At this point we should have both session and user context
+        // Check premium status
         if (!user?.is_premium) {
           setPremiumModalOpen(true);
           toast({
@@ -121,21 +127,23 @@ export default function PromptHistoryPage() {
           return;
         }
 
-        // Load prompt history
-        const { data: promptHistory, error: historyError } = await getPromptHistory(session.user.id);
+        // Wait for prompt history data
+        if (promptHistoryPromise) {
+          const { data: promptHistory, error: historyError } = await promptHistoryPromise;
 
-        if (historyError) {
-          console.error("Error getting prompt history:", historyError);
-          toast({
-            title: "Error loading prompt history",
-            description: "Please try again later",
-            variant: "destructive",
-          });
-          return;
+          if (historyError) {
+            console.error("Error getting prompt history:", historyError);
+            toast({
+              title: "Error loading prompt history",
+              description: "Please try again later",
+              variant: "destructive",
+            });
+            return;
+          }
+
+          setPrompts(promptHistory || []);
+          setPromptCount(user.total_prompts_limit || 5);
         }
-
-        setPrompts(promptHistory || []);
-        setPromptCount(user.total_prompts_limit || 5);
       } catch (error) {
         console.error("Error in prompt history:", error);
         toast({
@@ -203,9 +211,12 @@ export default function PromptHistoryPage() {
   // Show loading state while either the user context or data is loading
   if (userLoading || isLoading) {
     return (
-      <div className="flex flex-1 min-h-screen items-center justify-center bg-black">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-white border-t-transparent"></div>
-      </div>
+      <main className="flex flex-1 min-h-screen items-center justify-center bg-black">
+        <div className="flex flex-col items-center gap-4">
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-white border-t-transparent"></div>
+          <p className="text-white text-sm">Loading prompt history...</p>
+        </div>
+      </main>
     );
   }
 
@@ -255,7 +266,7 @@ export default function PromptHistoryPage() {
                               {getPromptSummary(prompt.message)}
                             </span>
                           </div>
-                          <span className="text-sm text-gray-500 ml-4">
+                          <span className="text-sm text-gray-500 mr-2">
                             {formatDate(prompt.created_at)}
                           </span>
                         </div>
@@ -265,32 +276,40 @@ export default function PromptHistoryPage() {
                           <div>
                             <div className="flex items-center justify-between mb-2">
                               <h3 className="font-medium">Your Request</h3>
+                            </div>
+                            <p className="text-gray-600 dark:text-zinc-400">{prompt.message}</p>
+                          </div>
+                          <div>
+                            <div className="flex items-center justify-between mb-2">
+                              <h3 className="font-medium">Metamind Response</h3>
                               <div
                                 onClick={() =>
-                                  copyToClipboard(prompt.message, prompt.id)
+                                  copyToClipboard(prompt.ai_response, prompt.id)
                                 }
-                                className="p-2 hover:bg-[#f5f5f5] dark:hover:bg-white/10 rounded-md transition-colors cursor-pointer"
+                                className="flex items-center gap-2 p-2 hover:bg-[#f5f5f5] dark:hover:bg-white/10 rounded-md transition-colors cursor-pointer"
                                 title="Copy prompt"
                                 role="button"
                                 tabIndex={0}
                                 onKeyDown={(e) => {
                                   if (e.key === "Enter" || e.key === " ") {
                                     e.preventDefault();
-                                    copyToClipboard(prompt.message, prompt.id);
+                                    copyToClipboard(prompt.ai_response, prompt.id);
                                   }
                                 }}
                               >
                                 {copiedPrompts[prompt.id] ? (
-                                  <CheckIcon className="h-4 w-4 text-green-500" />
+                                  <>
+                                    <CheckIcon className="h-4 w-4 text-green-500" />
+                                    <span className="text-sm text-green-500">Copied!</span>
+                                  </>
                                 ) : (
-                                  <CopyIcon className="h-4 w-4" />
+                                  <>
+                                    <CopyIcon className="h-4 w-4" />
+                                    <span className="text-sm">Copy prompt</span>
+                                  </>
                                 )}
                               </div>
                             </div>
-                            <p className="text-gray-600 dark:text-zinc-400">{prompt.message}</p>
-                          </div>
-                          <div>
-                            <h3 className="font-medium mb-2">Metamind Response</h3>
                             <div className="bg-[#f5f5f5] dark:bg-white/10 dark:border dark:border-white/30 p-4 rounded-lg">
                               <pre className="whitespace-pre-wrap font-mono text-sm">
                                 {prompt.ai_response}

@@ -9,27 +9,27 @@ interface Message {
   isUser: boolean;
   timestamp: string;
   syntaxHighlight?: boolean;
-  toolType?: "V0" | "Cursor" | "Bolt" | "Tempo";
+  toolType?: "V0" | "Cursor" | "Bolt" | "Tempo" | "Lovable";
 }
 
 interface MessageHistoryProps {
   messages?: Message[];
   loading?: boolean;
-  selectedTool?: "V0" | "Cursor" | "Bolt" | "Tempo";
+  selectedTool?: "V0" | "Cursor" | "Bolt" | "Tempo" | "Lovable";
 }
 
 const MessageHistory = ({
+  selectedTool = "V0",
   messages = [
     {
       id: "1",
       message: "Hello! How can I help you with AI tool instructions today?",
       isUser: false,
       timestamp: new Date().toLocaleTimeString(),
-      toolType: "Tempo",
+      toolType: selectedTool,
     },
   ],
   loading = false,
-  selectedTool = "Tempo",
 }: MessageHistoryProps) => {
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const endOfMessagesRef = useRef<HTMLDivElement>(null);

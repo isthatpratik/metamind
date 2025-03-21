@@ -1,18 +1,19 @@
 import React from "react";
 import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
 import { Label } from "./ui/label";
+import Image from "next/image";
 
 interface ToolSelectorProps {
-  selectedTool?: "V0" | "Cursor" | "Bolt" | "Tempo";
-  onToolChange?: (tool: "V0" | "Cursor" | "Bolt" | "Tempo") => void;
+  selectedTool?: "V0" | "Cursor" | "Bolt" | "Tempo" | "Lovable";
+  onToolChange?: (tool: "V0" | "Cursor" | "Bolt" | "Tempo" | "Lovable") => void;
 }
 
 const ToolSelector = ({
-  selectedTool = "Tempo",
+  selectedTool = "V0",
   onToolChange = () => {},
 }: ToolSelectorProps) => {
   const handleToolChange = (value: string) => {
-    onToolChange(value as "V0" | "Cursor" | "Bolt" | "Tempo");
+    onToolChange(value as "V0" | "Cursor" | "Bolt" | "Tempo" | "Lovable");
   };
 
   return (
@@ -25,7 +26,7 @@ const ToolSelector = ({
           onValueChange={handleToolChange}
           className="flex flex-wrap justify-center gap-6 mt-3"
         >
-          {["V0", "Cursor", "Bolt", "Tempo"].map((tool) => (
+          {["V0", "Cursor", "Bolt", "Tempo", "Lovable"].map((tool) => (
             <div
               key={tool}
               className={`flex items-center space-x-2 p-3 ${selectedTool === tool ? "bg-black text-white" : "bg-white hover:bg-[#f5f5f5] border border-[#eaeaea]"}`}

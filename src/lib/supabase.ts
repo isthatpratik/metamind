@@ -138,7 +138,8 @@ export const getPromptHistory = async (userId: string) => {
     .from('prompt_history')
     .select('*')
     .eq('user_id', userId)
-    .order('created_at', { ascending: false });
+    .order('created_at', { ascending: false })
+    .limit(20);
   return { data, error };
 };
 

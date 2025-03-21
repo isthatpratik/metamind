@@ -11,7 +11,7 @@ interface MessageBubbleProps {
   isUser?: boolean;
   timestamp?: string;
   syntaxHighlight?: boolean;
-  toolType?: "V0" | "Cursor" | "Bolt" | "Tempo";
+  toolType?: "V0" | "Cursor" | "Bolt" | "Tempo" | "Lovable";
 }
 
 const MessageBubble = ({
@@ -19,7 +19,7 @@ const MessageBubble = ({
   isUser = false,
   timestamp = new Date().toLocaleTimeString(),
   syntaxHighlight = false,
-  toolType = "Tempo",
+  toolType = "V0",
 }: MessageBubbleProps) => {
   const { toast } = useToast();
   const { theme } = useTheme();
@@ -35,7 +35,7 @@ const MessageBubble = ({
 
   // Determine background color based on sender
   const bubbleClasses = cn(
-    "p-4 max-w-[85%] rounded-lg mb-4 dark:bg-gray-700 dark:border-white/10 dark:border dark:text-white",
+    "p-4 max-w-[85%] rounded-lg mb-4 dark:bg-neutral-900 dark:border-white/10 dark:border dark:text-white",
     isUser
       ? "bg-black text-white ml-auto"
       : "bg-white text-black mr-auto border dark:bg-black/80 dark:border-white/30 dark:text-white",
@@ -66,17 +66,17 @@ const MessageBubble = ({
         {syntaxHighlight && !isUser ? (
           <div className="relative">
             <div className="relative">
-              <div className="absolute -top-3 left-4 bg-black rounded-lg text-white text-xs px-2 py-1">
+              <div className="absolute -top-3 left-4 bg-neutral-700 rounded-lg text-white text-xs px-2 py-1">
                 {toolType} Prompt
               </div>
-              <pre className="p-6 pt-8 bg-black text-sm text-white mt-2 whitespace-pre-wrap rounded-lg overflow-x-hidden">
+              <pre className="p-6 pt-8 bg-neutral-900 text-sm text-white mt-2 whitespace-pre-wrap rounded-sm overflow-x-hidden">
                 <code>{message}</code>
               </pre>
               <div className="mt-2">
                 <Button
                   variant="outline"
                   size="sm"
-                  className="h-8 px-3 text-xs bg-gradient-to-r from-[#A07CFE] via-[#FE8FB5] to-[#FFBE7B] hover:opacity-90 text-white rounded-lg border-0"
+                  className="h-8 px-3 text-xs bg-gradient-to-r from-[#A07CFE] via-[#FE8FB5] to-[#FFBE7B] hover:opacity-90 text-white rounded-sm border-0"
                   onClick={() => copyToClipboard()}
                 >
                   <Copy className="h-3 w-3 mr-1" />
