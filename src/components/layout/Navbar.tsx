@@ -17,23 +17,26 @@ interface NavbarProps {
 
 export function Navbar({ onOpenAuth, onOpenPremium }: NavbarProps) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
-  const { theme } = useTheme();
-  const { user, promptCount, isLoading, setPromptCount } = useUser();
+  const { theme, resolvedTheme } = useTheme();
+  const { user, promptCount, isLoading: userLoading, setPromptCount } = useUser();
 
-  // Add click outside handler
+  // Handle mounting state
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Handle clicks outside menu
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
         setMenuOpen(false);
       }
     }
-
     document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   const handleLogout = async () => {
@@ -45,7 +48,6 @@ export function Navbar({ onOpenAuth, onOpenPremium }: NavbarProps) {
       return;
     }
     setPromptCount(0);
-    setMenuOpen(false); // Close menu after logout
     router.push("/");
   };
 
@@ -58,24 +60,45 @@ export function Navbar({ onOpenAuth, onOpenPremium }: NavbarProps) {
     setMenuOpen(false); // Close menu after navigation
   };
 
+  // Don't render anything until mounted to prevent hydration mismatch
+  if (!mounted) {
+    return (
+      <div className="w-full bg-white dark:bg-black">
+        <div className="w-full max-w-7xl mx-auto px-4">
+          <div className="w-full flex justify-between items-center py-6">
+            <div className="flex items-center gap-2 w-25 h-auto">
+              <div className="w-[180px] h-[50px] bg-gray-200 dark:bg-gray-800 animate-pulse rounded-lg" />
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="h-10 w-10 bg-gray-200 dark:bg-gray-800 animate-pulse rounded-lg" />
+              <div className="h-10 w-32 bg-gray-200 dark:bg-gray-800 animate-pulse rounded-lg" />
+              <div className="h-10 w-20 bg-gray-200 dark:bg-gray-800 animate-pulse rounded-lg" />
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="w-full bg-white dark:bg-black">
       <div className="w-full max-w-7xl mx-auto px-4">
         <div className="w-full flex justify-between items-center py-6">
           <Link href="/" className="flex items-center gap-2 w-25 h-auto">
             <Image
-              src={theme === "light" ? "/images/metamind-light.png" : "/images/metamind-dark.png"}
+              src={resolvedTheme === "dark" ? "/images/metamind-dark.png" : "/images/metamind-light.png"}
               alt="MetaMind Logo"
               width={200}
               height={200}
               className="object-contain lg:w-[180px] w-[120px]"
+              priority
             />
           </Link>
           <div className="flex items-center gap-2">
             <ThemeSwitcher />
 
             {/* Prompt count display */}
-            {isLoading ? (
+            {userLoading ? (
               <div className="hidden sm:block h-10 w-32 bg-gray-200 dark:bg-gray-800 animate-pulse rounded-lg" />
             ) : user && (
               <span className="hidden sm:inline-block text-sm dark:text-white font-medium px-4 py-2 bg-white/80 dark:bg-transparent backdrop-blur-sm border border-[#eaeaea] dark:border-white/50 rounded-lg">
@@ -87,7 +110,7 @@ export function Navbar({ onOpenAuth, onOpenPremium }: NavbarProps) {
             )}
 
             {/* Auth buttons or user menu */}
-            {isLoading ? (
+            {userLoading ? (
               <div className="flex gap-2">
                 <div className="h-10 w-20 bg-gray-200 dark:bg-gray-800 animate-pulse rounded-lg" />
                 <div className="h-10 w-20 bg-gray-200 dark:bg-gray-800 animate-pulse rounded-lg" />

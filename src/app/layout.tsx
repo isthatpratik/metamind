@@ -9,6 +9,7 @@ import { Footer } from "@/components/layout/Footer";
 import { useState } from "react";
 import AuthModal from "@/components/auth/AuthModal";
 import PremiumModal from "@/components/premium/PremiumModal";
+import { Toaster } from "@/components/ui/toaster";
 
 const fustat = Fustat({
   subsets: ["latin"],
@@ -52,7 +53,9 @@ export default function RootLayout({
             />
             <main className="flex-1 flex flex-col">
               {children}
+              
             </main>
+            
             <Footer />
 
             <AuthModal
@@ -77,6 +80,8 @@ export default function RootLayout({
               onClose={() => setPremiumModalOpen(false)}
             />
           </UserProvider>
+
+          
         </ThemeProvider>
       </body>
     </html>
