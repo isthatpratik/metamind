@@ -187,9 +187,9 @@ export const createPaymentIntent = async (userId: string) => {
   return { data, error };
 };
 
-export const handlePaymentSuccess = async (userId: string) => {
+export const handlePaymentSuccess = async (userId: string, paymentIntentId: string) => {
   const { data, error } = await supabase.functions.invoke('handle-payment-success', {
-    body: { userId }
+    body: { userId, paymentIntentId }
   });
   return { data, error };
 }; 

@@ -66,13 +66,13 @@ serve(async (req: Request) => {
     const supabaseClient = createClient(supabaseUrl, serviceRoleKey)
 
     // Parse request body
-    const { userId } = await req.json()
+    const { userId, paymentIntentId } = await req.json()
     
-    if (!userId) {
+    if (!userId || !paymentIntentId) {
       return new Response(
         JSON.stringify({ 
           success: false,
-          error: 'User ID is required' 
+          error: 'User ID and Payment Intent ID are required' 
         }),
         { 
           status: 400,
@@ -81,7 +81,55 @@ serve(async (req: Request) => {
       )
     }
 
-    console.log('Processing payment success for user:', userId)
+    console.log('Processing payment success for user:', userId, 'payment intent:', paymentIntentId)
+
+    // Check if this payment has already been processed
+    const { data: existingPayment, error: paymentCheckError } = await supabaseClient
+      .from('payments')
+      .select('id, payment_intent_id, created_at')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single();
+
+    if (paymentCheckError && paymentCheckError.code !== 'PGRST116') { // PGRST116 is "not found" error
+      console.error('Error checking existing payment:', paymentCheckError);
+      return new Response(
+        JSON.stringify({ 
+          success: false,
+          error: `Failed to check existing payment: ${paymentCheckError.message}` 
+        }),
+        { 
+          status: 500,
+          headers: corsHeaders
+        }
+      );
+    }
+
+    // If a payment exists and was processed in the last 5 minutes, consider it a duplicate
+    if (existingPayment) {
+      const paymentDate = new Date(existingPayment.created_at);
+      const now = new Date();
+      const minutesDiff = (now.getTime() - paymentDate.getTime()) / 1000 / 60;
+      
+      if (minutesDiff < 5) {
+        console.log('Duplicate payment detected, skipping processing');
+        return new Response(
+          JSON.stringify({ 
+            success: true,
+            message: 'Payment already processed',
+            data: {
+              is_premium: true,
+              has_prompt_history_access: true
+            }
+          }),
+          { 
+            headers: corsHeaders,
+            status: 200
+          }
+        );
+      }
+    }
 
     // First get the current profile
     const { data: profile, error: profileError } = await supabaseClient
@@ -149,7 +197,8 @@ serve(async (req: Request) => {
         {
           user_id: userId,
           amount: 3.99,
-          status: 'completed',
+          status: 'pending',
+          payment_intent_id: paymentIntentId,
         },
       ])
 

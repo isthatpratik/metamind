@@ -27,9 +27,17 @@ export default function PaymentSuccessPage() {
           return;
         }
 
+        // Get payment intent ID from URL
+        const searchParams = new URLSearchParams(window.location.search);
+        const paymentIntentId = searchParams.get('payment_intent');
+        
+        if (!paymentIntentId) {
+          throw new Error('No payment intent ID found in URL');
+        }
+
         // Process payment success with retries
         const processPayment = async () => {
-          const { data, error: paymentError } = await handlePaymentSuccess(user.id);
+          const { data, error: paymentError } = await handlePaymentSuccess(user.id, paymentIntentId);
           
           if (paymentError) {
             if (retryCount < MAX_RETRIES) {

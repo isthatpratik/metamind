@@ -238,7 +238,6 @@ export function PremiumModal({ isOpen, onClose }: PremiumModalProps) {
         throw new Error('No active session');
       }
 
-      console.log('Creating payment intent...');
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/create-payment-intent`,
         {
@@ -255,7 +254,6 @@ export function PremiumModal({ isOpen, onClose }: PremiumModalProps) {
       );
 
       const responseData = await response.json();
-      console.log('Payment intent response:', responseData);
 
       if (!response.ok) {
         throw new Error(responseData.error || 'Failed to create payment intent');
@@ -265,11 +263,9 @@ export function PremiumModal({ isOpen, onClose }: PremiumModalProps) {
         throw new Error('No client secret received');
       }
 
-      console.log('Setting client secret and showing payment form...');
       setClientSecret(responseData.clientSecret);
       setShowPayment(true);
     } catch (error: unknown) {
-      console.error('Error creating payment intent:', error);
       toast({
         title: "Error",
         description: error instanceof Error ? error.message : 'Failed to create payment intent',

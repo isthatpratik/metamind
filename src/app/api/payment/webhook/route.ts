@@ -56,6 +56,38 @@ export async function POST(req: Request) {
         throw new Error('No user ID found in payment intent metadata');
       }
 
+      // Check if this payment intent has already been processed
+      const { data: existingPayment, error: paymentCheckError } = await supabase
+        .from('payments')
+        .select('id')
+        .eq('payment_intent_id', paymentIntent.id)
+        .single();
+
+      if (paymentCheckError && paymentCheckError.code !== 'PGRST116') { // PGRST116 is "not found" error
+        console.error('Error checking existing payment:', paymentCheckError);
+        throw new Error(`Failed to check existing payment: ${paymentCheckError.message}`);
+      }
+
+      if (existingPayment) {
+        console.log('Payment intent already processed:', paymentIntent.id);
+        return NextResponse.json({ received: true });
+      }
+
+      // Record the payment first to prevent duplicate processing
+      const { error: paymentError } = await supabase
+        .from('payments')
+        .insert({
+          user_id: userId,
+          amount: paymentIntent.amount / 100, // Convert from cents to dollars
+          status: 'succeeded', // Only set succeeded when confirmed by Stripe webhook
+          payment_intent_id: paymentIntent.id,
+        });
+
+      if (paymentError) {
+        console.error('Error recording payment:', paymentError);
+        throw new Error(`Failed to record payment: ${paymentError.message}`);
+      }
+
       // Get current profile
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
@@ -93,21 +125,6 @@ export async function POST(req: Request) {
       if (updateError) {
         console.error('Error updating profile:', updateError);
         throw new Error(`Failed to update profile: ${updateError.message}`);
-      }
-
-      // Record the payment in payments table
-      const { error: paymentError } = await supabase
-        .from('payments')
-        .insert({
-          user_id: userId,
-          amount: paymentIntent.amount / 100, // Convert from cents to dollars
-          status: 'succeeded',
-          payment_intent_id: paymentIntent.id,
-        });
-
-      if (paymentError) {
-        console.error('Error recording payment:', paymentError);
-        throw new Error(`Failed to record payment: ${paymentError.message}`);
       }
 
       console.log('Payment processed and profile updated successfully');
