@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import ChatInterface from "@/components/ChatInterface";
-import { generateAIResponse } from "@/lib/openai";
+import { generateAIResponse } from "@/lib/gemini";
 import AuthModal from "@/components/auth/AuthModal";
 import PremiumModal from "@/components/premium/PremiumModal";
 import SearchParamsClient from "@/components/SearchParamsClient";
